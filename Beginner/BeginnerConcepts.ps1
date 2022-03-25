@@ -138,9 +138,7 @@ Get-Mailbox admin | Get-Member
 (Get-Mailbox admin).gettype()
 
 # If you need more info : help Get-Command -online/-detailed/-full/etc...
-#endregion 
-
-#TODO - continue from here
+#endregion Get-Command
 
 #region Profile
 
@@ -150,11 +148,13 @@ Get-Mailbox admin | Get-Member
 $Profile 
 $Profile.AllUsersCurrentHost
 $Profile.CurrentUserAllHosts 
-$Profile.AllUsersCurrentHost
 $Profile.AllUsersAllHosts
 
+# Each Powershell Console will have its own profile config file in same folder paths, for example ISE
+# For example, you could of override Powershell default prompt function using your profile
+# function prompt {"$( ((Get-Location).Path).Split("\")|select -last 1 )>"}
 
-#endregion
+#endregion Profile
 
 #region Parameters
 # Positional parameters make Windows PowerShell commands shorter because you do not have to do as much typing,
@@ -173,6 +173,7 @@ If the cmdlet is making changes you can use the following parameters:
 -Confirm:$False (in case a permission need to be asked, it will automatically proceed)
 #>
 
+# We recommend avoiding to use positional parameters when writing scripts/collaborating with others as it can make code harder to read
 Write-Host "!!! In a script, you should always use complete parameter names because with full parameter names, you actually know what the code is doing and it is more readable." -ForegroundColor "Red"
 Write-Host "!!! You should avoid partial parameter names, and positional parameters for the same reason." -ForegroundColor "Red"
 #endregion
@@ -182,24 +183,38 @@ Write-Host "!!! You should avoid partial parameter names, and positional paramet
 History
 history | select -First 1 | fl *
 History | select CommandLine
+history | select -last 10
 #endregion
 
 #region Snapin and Modules
-# Commands are shared by using modules and snap-ins.
+# Commands are shared by using modules or snap-ins.
 
 # Modules
 # A module is a package of commands and other items that you can use in Windows PowerShell.
 # After you run the setup program or save the module to disk, you can import the module into
 # your Windows PowerShell session and use the commands and items. You can also use modules
-# to organize the cmdlets, providers, functions, aliases, and other commands that you create,
+# to organize the providers, functions, aliases, and other commands that you create,
 # and share them with others.
 
 Get-Module -ListAvailable
 Import-Module Dirsync
 Import-Module ActiveDirectory 
 
+# If a module is not present, you will need to install : https://docs.microsoft.com/en-us/powershell/module/powershellget/install-module?view=powershell-7.2
+Install-Module -Name O365CentralizedAddInDeployment
+
+Import-Module -Name O365CentralizedAddInDeployment
+
+# After installing and importing the module, we can start using functions from that module
+Connect-OrganizationAddInService
+
+Get-OrganizationAddIn
+
+foreach($G in (Get-organizationAddIn)){Get-OrganizationAddIn -ProductId $G.ProductId | Format-List}
+
 # show cmdlets from Dirsync module
 Get-Command -module Dirsync
+# To retrieve commands from temporary modules downloaded on the fly by a connection script, such as EXO Powershell module, run:
 Get-Command -module "tmp*"
 Get-Command -module tmp_nqerwha0.c2h
 
@@ -208,21 +223,18 @@ $env:PSModulePath
 Get-Content env:\PSModulePath
 
 # Snap-ins
-# A Windows PowerShell snap-in (PSSnapin) is a dynamic link library (.dll) that implements
+# A Windows PowerShell snap-in (PSSnapin) is a program written in a .NET Framework language 
+# that is compiled into a dynamic link library (.dll) that implements
 # cmdlets and providers. When you receive a snap-in, you need to install it, and then you
 # can add the cmdlets and providers in the snap-in to your Windows PowerShell session.
 
 Get-PSSnapin
 Add-PSSnapin Microsoft.Exchange.Management.PowerShell.E2010 
 
-# To connecto to EXO we don't need any modul; We are connecting using a PS Session (so the modul will be automatically downloaded when importing PS Session)
-# To connect to MSOL you need to have installed:
-# - Microsoft Online Services Sign-In Assistant for IT Professionals RTW
-# - Azure Active Directory Module for Windows PowerShell (64-bit version)
-# https://technet.microsoft.com/en-us/library/jj151815.aspx
-# So always check if you need a module to connect to a service
+# To connecto to EXO we don't need any module; We are connecting using a PS Session (so the module will be automatically downloaded when importing PS Session)
+# To connect to MSOLService : https://docs.microsoft.com/en-us/powershell/azure/active-directory/install-msonlinev1?view=azureadps-1.0
 
-#endregion
+#endregion 
 
 #region Execution Policy
 <#
@@ -240,6 +252,75 @@ and run scripts, and it determines which scripts, if any, must be digitally sign
 
 #For connecting to Exchange Online
 Set-ExecutionPolicy RemoteSigned
+#endregion
+
+#region Variable
+#TODO - continue from here
+# $var - the content of the variable "x"
+# ${Any name of the variable between curly brackets}
+dir variable:
+Get-Variable
+
+# Powershell Providers
+# A Windows PowerShell provider is basically a sort of abstraction layer that hides the complexities of different types of information stores.
+Get-PSProvider
+Get-ChildItem Env:
+Get-Location
+Set-Location -Path "HKLM:"
+Set-Location -Path "Env:" -PassThru
+Set-Location "C:\Users\vilega\OneDrive\Powershell"
+
+# Optional
+# Single quotes vs double quotes (and back tick :) )
+$var = "Victor"
+$v1 = "My name is $var"
+$v1
+$v2 = 'My name is $var'
+$v2
+$v3 = "My name is `$var=$var"
+$v3
+
+$mbx = Get-mailbox admin
+$mbx.name
+$v4 = " My mailbox is $mbx"
+$v4
+$v4 = " My mailbox is $mbx.name"
+$v4
+
+$v4 = " My mailbox is $($mbx.name)"
+$v4
+
+$v5 =  " My mailbox is " + $mbx.name 
+$v5 
+
+$var | Get-Member
+
+
+<# Variable Data Types
+The most common DataTypes used in PowerShell are listed below.
+
+[string]    Fixed-length string of Unicode characters
+[char]      A Unicode 16-bit character
+[byte]      An 8-bit unsigned character
+
+[int]       32-bit signed integer
+[long]      64-bit signed integer
+[bool]      Boolean True/False value
+
+[decimal]   A 128-bit decimal value
+[single]    Single-precision 32-bit floating point number
+[double]    Double-precision 64-bit floating point number
+[DateTime]  Date and Time
+
+[xml]       Xml object
+[array]     An array of values
+[hashtable] Hashtable object
+
+
+# To force a variable type (always provide variable type in script)
+[int]$number = 5
+#>
+
 #endregion
 
 #region Objects (help about_Objects)
@@ -383,75 +464,6 @@ Measure-Command {Get-Mailbox -Identity admin@vilega01.onmicrosoft.com}
 Measure-Command {Get-Mailbox -Filter:"name -like '*admin*'"}
 
 #endregion
-
-#region Variable
-# $var - the content of the variable "x"
-# ${Any name of the variable between curly brackets}
-dir variable:
-Get-Variable
-
-# Powershell Providers
-# A Windows PowerShell provider is basically a sort of abstraction layer that hides the complexities of different types of information stores.
-Get-PSProvider
-Get-ChildItem Env:
-Get-Location
-Set-Location -Path "HKLM:"
-Set-Location -Path "Env:" -PassThru
-Set-Location "C:\Users\vilega\OneDrive\Powershell"
-
-# Optional
-# Single quotes vs double quotes (and back tick :) )
-$var = "Victor"
-$v1 = "My name is $var"
-$v1
-$v2 = 'My name is $var'
-$v2
-$v3 = "My name is `$var=$var"
-$v3
-
-$mbx = Get-mailbox admin
-$mbx.name
-$v4 = " My mailbox is $mbx"
-$v4
-$v4 = " My mailbox is $mbx.name"
-$v4
-
-$v4 = " My mailbox is $($mbx.name)"
-$v4
-
-$v5 =  " My mailbox is " + $mbx.name 
-$v5 
-
-$var | Get-Member
-
-
-<# Variable Data Types
-The most common DataTypes used in PowerShell are listed below.
-
-[string]    Fixed-length string of Unicode characters
-[char]      A Unicode 16-bit character
-[byte]      An 8-bit unsigned character
-
-[int]       32-bit signed integer
-[long]      64-bit signed integer
-[bool]      Boolean True/False value
-
-[decimal]   A 128-bit decimal value
-[single]    Single-precision 32-bit floating point number
-[double]    Double-precision 64-bit floating point number
-[DateTime]  Date and Time
-
-[xml]       Xml object
-[array]     An array of values
-[hashtable] Hashtable object
-
-
-# To force a variable type (always provide variable type in script)
-[int]$number = 5
-#>
-
-#endregion
-
 
 
 #region Loops
