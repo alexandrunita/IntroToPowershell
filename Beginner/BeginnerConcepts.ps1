@@ -255,8 +255,6 @@ Set-ExecutionPolicy RemoteSigned
 #endregion
 
 #region Variable
-#TODO - continue from here
-# Discuss RunspaceID
 # $var - the content of the variable "x"
 
 # ${Any name of the variable between curly brackets}
@@ -328,6 +326,7 @@ for an extensive list of Types in Powershell, you can review : https://docs.micr
 #endregion
 
 #TODO - continue review from here
+# Discuss RunspaceID!!!
 #region Operators (help about_Comparison_Operators)
 <#
 Windows PowerShell includes the following comparison operators:
