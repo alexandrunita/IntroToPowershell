@@ -256,19 +256,15 @@ Set-ExecutionPolicy RemoteSigned
 
 #region Variable
 #TODO - continue from here
+# Discuss RunspaceID
 # $var - the content of the variable "x"
-# ${Any name of the variable between curly brackets}
-dir variable:
-Get-Variable
 
-# Powershell Providers
-# A Windows PowerShell provider is basically a sort of abstraction layer that hides the complexities of different types of information stores.
-Get-PSProvider
-Get-ChildItem Env:
-Get-Location
-Set-Location -Path "HKLM:"
-Set-Location -Path "Env:" -PassThru
-Set-Location "C:\Users\vilega\OneDrive\Powershell"
+# ${Any name of the variable between curly brackets}
+# When variable names contain - or we need to use curly braces to use the variable name
+${variable-name} = "string"
+
+dir variable: #System path where we can explore all current variables in the current powershell session
+Get-Variable
 
 # Optional
 # Single quotes vs double quotes (and back tick :) )
@@ -276,12 +272,18 @@ $var = "Victor"
 $v1 = "My name is $var"
 $v1
 $v2 = 'My name is $var'
+<#
+using single quotes forces Powershell to use a literal string, not acting on special characters inside the string
+#>
 $v2
-$v3 = "My name is `$var=$var"
+$v3 = "My name is `$var=$var" 
+<#
+# to display special characters from Powershell scripting language as text, we need to escape the special character by using escape character 
+#>
 $v3
 
 $mbx = Get-mailbox admin
-$mbx.name
+$mbx.name # displaying the value of a property inside an object returned by the cmdlet - objects to be discussed later
 $v4 = " My mailbox is $mbx"
 $v4
 $v4 = " My mailbox is $mbx.name"
@@ -293,7 +295,7 @@ $v4
 $v5 =  " My mailbox is " + $mbx.name 
 $v5 
 
-$var | Get-Member
+$var | Get-Member # To view all properties and methods associated to the object stored in your variable
 
 
 <# Variable Data Types
@@ -316,11 +318,49 @@ The most common DataTypes used in PowerShell are listed below.
 [array]     An array of values
 [hashtable] Hashtable object
 
+for an extensive list of Types in Powershell, you can review : https://docs.microsoft.com/en-us/powershell/scripting/lang-spec/chapter-04?view=powershell-7.2
 
 # To force a variable type (always provide variable type in script)
 [int]$number = 5
+# If we do not specifically set the variable type, Powershell will perform an automatic type casting (selects the type it believes you will need, which can be wrong)
 #>
 
+#endregion
+
+#TODO - continue review from here
+#region Operators (help about_Comparison_Operators)
+<#
+Windows PowerShell includes the following comparison operators:
+  -eq
+  -ne
+  -gt
+  -ge
+  -lt
+  -le
+  -Like (used for wildcard comparison; used only for string comparison)
+  -NotLike
+  -Match
+  -NotMatch
+  -Contains (result: true/false; will tell if one collection of objects contains an object)
+  -NotContains
+  -In (result: true/false; will tell if one object is included in a collection of objects)
+  -NotIn
+  -Replace
+
+Other operators:
+- is
+- as
+- Replace
+- Join
+- Split ","
+
+
+!!! The match operators search only in strings. They cannot search in arrays.
+
+By default, all comparison operators are case-insensitive. To make a comparison operator case-sensitive, precede the operator name with a "c".
+For example, the case-sensitive version of "-eq" is "-ceq".
+To make the case-insensitivity explicit, precede the operator with an "i". For example, the explicitly case-insensitive version of "-eq" is "ieq".
+#>
 #endregion
 
 #region Objects (help about_Objects)
@@ -342,6 +382,23 @@ Get-Mailbox admin | Get-Member
 cls
 #endregion
 
+#region Pipeline
+# The output of one command is used as the input for another command
+# If the parameters that we need from the left side is not identical with a parameters on the right side
+# we need to create a custom one based the information we have on the left side :) 
+Get-Mailbox -PublicFolder |Get-MailboxStatistics
+
+$mailboxes = New-Object Object | Select-Object -Property Name,EmailAddress
+$mailboxes.Name = "admin"
+$mailboxes.EmailAddress = "admin@vilega.onmicrosoft.com"
+
+#$mailboxes = Import-Csv "test.csv"
+$mailboxes | Get-Mailbox
+Help Get-Mailbox -Full
+
+$mailboxes | Select-Object @{Name='Identity'; expression = {$_.Name}} | Get-Mailbox
+#endregion
+
 #region Select-Object
 # From an object we can keep only what properties we need
 Get-Mailbox admin |Select-Object Name, PrimarySmtpAddress | Get-Member
@@ -355,11 +412,10 @@ Get-Mailbox admin |Select-Object Name, PrimarySmtpAddress,ThrottlingPolicy  |gm
 
 # aproperty can be expanded:
 Get-Mailbox admin |Select-Object -ExpandProperty EmailAddresses
+$FormatEnumerationLimit = -1
 Get-Mailbox admin | fl EmailAddresses
 
 #endregion
-
-$FormatEnumerationLimit = -1
 
 #region Sorting: Sort-Object
 # You can sort an object on a property. The default sorting is ascending.
@@ -406,68 +462,7 @@ $mbx = Get-Mailbox -SoftDeletedMailbox | Out-GridView -PassThru
 Get-Mailbox admin | Select-Object name, PrimarySmtpAddress, @{Name='Mailbox Creation Year'; Expression= {$_.WhenCreated.Year}} 
 #endregion
 
-#region Pipeline
-# The output of one command is used as the input for another command
-# If the parameters that we need from the left side is not identical with a parameters on the right side
-# we need to create a custom one based the information we have on the left side :) 
-Get-Mailbox -PublicFolder |Get-MailboxStatistics
-
-$mailboxes = New-Object Object | Select-Object -Property Name,EmailAddress
-$mailboxes.Name = "admin"
-$mailboxes.EmailAddress = "admin@vilega.onmicrosoft.com"
-
-#$mailboxes = Import-Csv "test.csv"
-$mailboxes | Get-Mailbox
-Help Get-Mailbox -Full
-
-$mailboxes | Select-Object @{Name='Identity'; expression = {$_.Name}} | Get-Mailbox
-#endregion
-
-#region Operators (help about_Comparison_Operators)
-<#
-Windows PowerShell includes the following comparison operators:
-  -eq
-  -ne
-  -gt
-  -ge
-  -lt
-  -le
-  -Like (used for wildcard comparison; used only for string comparison)
-  -NotLike
-  -Match
-  -NotMatch
-  -Contains (result: true/false; will tell if one collection of objects contains an object)
-  -NotContains
-  -In (result: true/false; will tell if one object is included in a collection of objects)
-  -NotIn
-  -Replace
-
-Other operators:
-- is
-- as
-- Replace
-- Join
-- Split ","
-
-
-!!! The match operators search only in strings. They cannot search in arrays.
-
-By default, all comparison operators are case-insensitive. To make a comparison operator case-sensitive, precede the operator name with a "c".
-For example, the case-sensitive version of "-eq" is "-ceq".
-To make the case-insensitivity explicit, precede the operator with an "i". For example, the explicitly case-insensitive version of "-eq" is "ieq".
-#>
-#endregion
-
-#region Performance
-Measure-Command {Get-Mailbox -ResultSize Unlimited | Where-Object {$_.PrimarySmtpAddress -eq 'admin@vilega01.onmicrosoft.com'}}
-Measure-Command {Get-Mailbox -Identity admin@vilega01.onmicrosoft.com}
-Measure-Command {Get-Mailbox -Filter:"name -like '*admin*'"}
-
-#endregion
-
-
 #region Loops
-
 
 # Conditional Logic - (if, elseif, elseif, switch)
 if (condition) {code block}
@@ -536,7 +531,7 @@ $<collection> |  ForEach-Object { code block}
 #>
 
 for(i=0; i<10;i++){}
-for(;;){break;}
+$i=0; for(;;){Write-Host $i; $i++; if($i -eq 10){break;}} #simulates a while(true) loop with a condition to break out of the loop
 
 foreach ($mbx in $mbxs){$mbx}
 
