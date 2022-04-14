@@ -233,6 +233,9 @@ Add-PSSnapin Microsoft.Exchange.Management.PowerShell.E2010
 
 # To connecto to EXO we don't need any module; We are connecting using a PS Session (so the module will be automatically downloaded when importing PS Session)
 # To connect to MSOLService : https://docs.microsoft.com/en-us/powershell/azure/active-directory/install-msonlinev1?view=azureadps-1.0
+# Each cmdlet run with |fl in modules used via Powershell Remoting will return a RunspaceID
+# This RunspaceID uniquely identifies the Powershell session used to run the cmdlets
+# The RunspaceID has no relation to the object/configuration retrieved by the cmdlet
 
 #endregion 
 
@@ -325,8 +328,6 @@ for an extensive list of Types in Powershell, you can review : https://docs.micr
 
 #endregion
 
-#TODO - continue review from here
-# Discuss RunspaceID!!!
 #region Operators (help about_Comparison_Operators)
 <#
 Windows PowerShell includes the following comparison operators:
@@ -369,33 +370,40 @@ As data moves from one command to the next, it moves as one or more identifiable
 An object, then, is a collection of data that represents an item.
 
 An object is made up of three types of data:
-- the objects type
-- its methods
-- its properties.
+- the objects type (string/integer/float number/array/etc..)
+- its methods (aka functions/actions)
+- its properties. (aka attributes)
 More objects are a Collection (the result of the bellow command).
 #>
 Get-Mailbox admin | Get-Member
 
 # Get-Member (gm alias)
-# Any command that produces output on the screen can be piped to Get-Member in order to see the events, alias properties, methods, properties and note properties
-cls
-#endregion
+# Any command that produces output on the screen can be piped to Get-Member in order to see the events, methods, properties
+#endregion Objects
 
 #region Pipeline
 # The output of one command is used as the input for another command
-# If the parameters that we need from the left side is not identical with a parameters on the right side
-# we need to create a custom one based the information we have on the left side :) 
-Get-Mailbox -PublicFolder |Get-MailboxStatistics
+# If the parameters that we need from the left side are not identical with a parameters on the right side
+# we need to create a custom one based the information we have on the left side
+
+# For example, we cannot get the MSOLGroup as ObjectID Parameter is not found on the output of the cmdlet on the left:
+Get-DistributionGroup ADList@liviunita.onmicrosoft.com | Get-MsolGroup
+
+# To make this, work we can do something like:
 
 $mailboxes = New-Object Object | Select-Object -Property Name,EmailAddress
-$mailboxes.Name = "admin"
-$mailboxes.EmailAddress = "admin@vilega.onmicrosoft.com"
+$mailboxes.Name = "liviu"
+$mailboxes.EmailAddress = "liviu@liviunita.onmicrosoft.com"
 
-#$mailboxes = Import-Csv "test.csv"
+# alternatively, we can import from a CSV $mailboxes = Import-Csv "test.csv"
 $mailboxes | Get-Mailbox
 Help Get-Mailbox -Full
 
-$mailboxes | Select-Object @{Name='Identity'; expression = {$_.Name}} | Get-Mailbox
+$mailboxes | Select-Object @{Name='Identity'; expression = {$_.EmailAddress}} | Get-Mailbox
+
+# Going back to example of the Distribution, we can fix the pipeline input matching for MsolGroup like this:
+Get-DistributionGroup ADList@liviunita.onmicrosoft.com | Select-Object @{Name='ObjectId'; expression = {$_.ExternalDirectoryObjectId}}| Get-MsolGroup
+
 #endregion
 
 #region Select-Object
@@ -408,12 +416,13 @@ Get-Mailbox admin |Select-Object Name, PrimarySmtpAddress,ThrottlingPolicy  |gm
 # You can use switches:
 #- Last 10
 #- First 5
+Get-Mailbox -ResultSize Unlimited | select -last 10
 
-# aproperty can be expanded:
+# a property can be expanded:
 Get-Mailbox admin |Select-Object -ExpandProperty EmailAddresses
+(Get-Mailbox admin).EmailAddresses
 $FormatEnumerationLimit = -1
 Get-Mailbox admin | fl EmailAddresses
-
 #endregion
 
 #region Sorting: Sort-Object
@@ -422,6 +431,7 @@ Get-Mailbox admin | fl EmailAddresses
 Get-Mailbox |Select-Object Name, PrimarySmtpAddress |Sort-Object Name -Descending
 #endregion
 
+#TODO - continue
 #region Formatting & Exporting
 <#
 Formating

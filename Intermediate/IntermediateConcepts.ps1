@@ -6,3 +6,6 @@ Get-Location
 Set-Location -Path "HKLM:"
 Set-Location -Path "Env:" -PassThru
 Set-Location "C:\Users\vilega\OneDrive\Powershell"
+
+
+# Discuss Like VS Match and Regex
