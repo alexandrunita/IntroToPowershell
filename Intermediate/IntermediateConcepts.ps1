@@ -9,3 +9,7 @@ Set-Location "C:\Users\vilega\OneDrive\Powershell"
 
 
 # Discuss Like VS Match and Regex
+
+# Explore Migration XML, check why Depth > 2 does not give more info
+
+# 
