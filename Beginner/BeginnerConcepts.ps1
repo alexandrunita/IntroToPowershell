@@ -381,6 +381,11 @@ Get-Mailbox admin | Get-Member
 # Any command that produces output on the screen can be piped to Get-Member in order to see the events, methods, properties
 #endregion Objects
 
+#region Custom Properties
+#@{Name='<Property Name>'; Expression= {<ExpressionValue>}}
+Get-Mailbox admin | Select-Object name, PrimarySmtpAddress, @{Name='Mailbox Creation Year'; Expression= {$_.WhenCreated.Year}} 
+#endregion Custom Properties
+
 #region Pipeline
 # The output of one command is used as the input for another command
 # If the parameters that we need from the left side are not identical with a parameters on the right side
@@ -431,14 +436,13 @@ Get-Mailbox admin | fl EmailAddresses
 Get-Mailbox |Select-Object Name, PrimarySmtpAddress |Sort-Object Name -Descending
 #endregion
 
-#TODO - continue
+
 #region Formatting & Exporting
 <#
 Formating
 The results can be piped to:
 Format-List (alias fl)
 Format-Table -Wrap -AutoSize (alias ft -w -A)
-Format-Wide (alias fw)
 
 In case no special formatting was created for the command if we have 4 or less properties
 the "Format-Table" will be chosen and if there are 5 or more properties the "Format-List" will be used.
@@ -448,8 +452,11 @@ the "Format-Table" will be chosen and if there are 5 or more properties the "For
 # Exporting commands results (after |)
 get-mailbox admin |fl > test.txt -> write
 # get-mailbox admin |fl >> test.txt -> append
-Export-csv -Path c:\output1.csv
-Export-clixml -Path C:\output2.xml
+Export-csv -Path c:\output1.csv -NoTypeInformation
+Export-clixml -Path C:\output2.xml -Depth 5 
+#default depth is 2, which may not always be sufficient to expand all objects, for example:
+$msolUser = Read-Host
+(Get-MsolUser -UserPrincipalName $msolUser).licenses[0].servicestatus
 Import-clixml C:\output2.xml
 Out-File -FilePath C:\output3.txt
 Out-GridView
@@ -461,19 +468,15 @@ ConvertTo-Json
 (Export = Convert + Out)
 #>
 
-Get-Mailbox | Out-GridView
+Get-Mailbox | select -First 10 | Out-GridView
 $mbx = Get-Mailbox -SoftDeletedMailbox | Out-GridView -PassThru
 
 #endregion
 
-#region Custom Properties
-#@{Name='<Property Name>'; Expression= {<ExpressionValue>}}
-Get-Mailbox admin | Select-Object name, PrimarySmtpAddress, @{Name='Mailbox Creation Year'; Expression= {$_.WhenCreated.Year}} 
-#endregion
 
 #region Loops
 
-# Conditional Logic - (if, elseif, elseif, switch)
+# Conditional Logic - (if, elseif, else, switch)
 if (condition) {code block}
 elseif (condition) {code block}
 else  {code block}
@@ -491,13 +494,36 @@ Switch (<test-value>)
 $switchTest=4
 Switch ($switchTest)
 {
-    1 {Write-Host "1"; break}
-    2 {Write-Host "2"; break}
-    3 {Write-Host "3"; break}
+    1 {Write-Host "1"; }
+    2 {Write-Host "2"; }
+    3 {Write-Host "3"; }
     default {Write-Host "default"}
 }
 # !!! The "Default" keyword specifies a condition that is evaluated only when no other conditions match the value.
+
+switch (3)
+{
+    1 {"It is one."}
+    2 {"It is two."}
+    3 {"It is three."; Break}
+    4 {"It is four."}
+    3 {"Three again."}
+}
+It is three.
+
 # !!! Any Break statements apply to the collection, not to each value.
+switch (4, 2)
+{
+    1 {"It is one."; Break}
+    2 {"It is two." ; Break }
+    3 {"It is three." ; Break }
+    4 {"It is four." ; Break }
+    3 {"Three again."}
+}
+
+It is four.
+
+# TODO - check if we need to add if/elseif/else examples
 
 # Where-Object
 Get-Mailbox | Where-Object {$_.PrimarySmtpAddress -eq "admin@vilega.onmicrosoft.com"}
