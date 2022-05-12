@@ -186,7 +186,7 @@ History | select CommandLine
 history | select -last 10
 #endregion
 
-#region Snapin and Modules
+#region Snapinn and Modules
 # Commands are shared by using modules or snap-ins.
 
 # Modules
