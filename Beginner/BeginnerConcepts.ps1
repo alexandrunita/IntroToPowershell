@@ -4,6 +4,8 @@ Write-Host "Windows PowerShell is an interactive object-oriented command environ
 - PowerShell
 - Integrated Scripting Environment (ISE)
 - 3rd party editors 
+- Windows terminal
+- Visual Studio Code
 #>
 #endregion
 
@@ -58,15 +60,20 @@ Get-Alias dir
 # For waht is cd alias?
 Get-Alias cd
 
+# aliases are not supported to use with Invoke-Command, and are not recommended in scripting
+
 #endregion
 
 #region Check Environment Settings
 
 # Check Powershell version
 $PSVersionTable
+# to check if your PS module has a minimum requirement of PS version, or there may be some know issues with newer versions of PS
 
 # Console Settings
 Get-Host
+# WWindows console
+# EMS, etc: host that loads PS and automatically loading module and connect to workload (right click on shortcut to see what it does at startup)
 
 # Local Machine settings
 Get-Culture
@@ -74,23 +81,34 @@ Get-Culture
 
 #If you need to run your PowerShell in a lower version, open Powershell with the following command: "powershell.exe -version 2"
 #In this case Powershell version used was 2
+# older PS verions were based on Windows Management Framework
 #endregion
 
 #region HelpTool
 
 # first thing to do on a new machine
-# Update Help 
-Update-Help
+# Update Help - lengthy
+# Update-Help
 
 # If we want to save Help content to a file, run:
 Save-Help
+
+# examples for which is important to have updated helpo repository
+help about*
+help about_Operators
+help about_Aliases
+help about_Arithmetic_Operators
+# help about* - very useful for learning usage scenario
 
 # We can also update-help from a saved file via save-help if without Internet Connection
 Update-Help -SourcePath %%
 
 # Use powershell help first instead of any search engine
 #Default command
-get-help Get-Mailbox #If not connected to Workload Module, help will not retrieve the information
+get-help Get-Mailbox 
+#If not connected to Workload Module, help will not retrieve the information
+# there are parameter sets which may be excluding one other - SYNTAX section
+
 # To only retrieve help on a specific parameter:
 get-help Get-Service -Parameter name
 
@@ -99,25 +117,22 @@ get-help Set-Mailbox -examples
 
 # for more information
 get-help Set-Mailbox -detailed
-
+get-help Set-Mailbox -full 
 # for technical information
 get-help Get-Mailbox -Parameter Identity
+#useful inscripting for best identifier usage (ex: identifier may not accept wildcard)
 
 # for online help 
 get-help Set-Mailbox -online
 
 # to explore all options of Get-Help cmdlet, check the help repository:
 Get-Help Get-Help
-
 # Help structured on topics (like user manual for powershell). Recommend to use it !!!
+
 # We can use alias "help" for Get-Help cmdlet
 help about
 
-# examples
-help about*
-help about_Operators
-help about_Aliases
-help about_Arithmetic_Operators
+
 #endregion HelpTool
 
 #region Get-Command
@@ -128,14 +143,20 @@ help about_Arithmetic_Operators
 
 Get-Command Get*MSOL*
 Get-Command *Calendar*
+Get-Command *set*Calendar*
 
 Get-Command -ParameterName max*
 Get-Command -ParameterName UserPrincipalName
+Get-Command -ParameterName UserPri*
 
 # Get-Member (gm alias)
-#Any command that produces output on the screen can be piped to Get-Member in order to see the events, alias properties, methods, properties and note properties
-Get-Mailbox admin | Get-Member
-(Get-Mailbox admin).gettype()
+#Any command that produces output on the screen is either an object or a collection of objects, and can be piped to Get-Member in order to see the events, alias properties, methods, properties and note properties
+
+# to check object type of each entry
+Get-Mailbox | Get-Member
+
+# to check the type of output object/collection
+(Get-Service).GetType()
 
 # If you need more info : help Get-Command -online/-detailed/-full/etc...
 #endregion Get-Command
@@ -166,12 +187,15 @@ help Get-Mailbox -Parameter Identity
 
 # Partial Parameters (shortcuts)
 Get-Mailbox -Id admin
+# id there is no confusion, PS will implicitly use the proper one (Id, Ide, Iden)
 
 <#
 If the cmdlet is making changes you can use the following parameters:
 - WhatIf (to see what will be changed)
 -Confirm:$False (in case a permission need to be asked, it will automatically proceed)
+- note -Confirm:$False is a switch and it requires ":". If it hase defalut value you can simply invoke it, example: -HasErrorsOnly for Get-MsolUser
 #>
+
 
 # We recommend avoiding to use positional parameters when writing scripts/collaborating with others as it can make code harder to read
 Write-Host "!!! In a script, you should always use complete parameter names because with full parameter names, you actually know what the code is doing and it is more readable." -ForegroundColor "Red"
@@ -184,26 +208,38 @@ History
 history | select -First 1 | fl *
 History | select CommandLine
 history | select -last 10
+# recall what you've ran 
+# see all cmdlets ran if you forgot to start transcript - export for documenting
+
+Invoke-History 
+# can re-run a specific cmdlet from history - position no. based
+r 34
+get-alias r
 #endregion
 
-#region Snapinn and Modules
+#region Snapin and Modules
 # Commands are shared by using modules or snap-ins.
-
+    # snap-ins - old way of grouping cmdlets. It loads all cmdlets, but if you don't have RBAC permissions on some, they won't work.
 # Modules
-# A module is a package of commands and other items that you can use in Windows PowerShell.
+# A module is a package of commands and other items that you can use in a Windows PowerShell session.
 # After you run the setup program or save the module to disk, you can import the module into
 # your Windows PowerShell session and use the commands and items. You can also use modules
 # to organize the providers, functions, aliases, and other commands that you create,
 # and share them with others.
+    # In EXO PS session, you'll only have available the cmdlets for which you have permissions via RBAC
+    # Other workloads can include all cmdlets in module
 
+Get-Module
 Get-Module -ListAvailable
-Import-Module Dirsync
-Import-Module ActiveDirectory 
+    Import-Module Dirsync
+    Import-Module ActiveDirectory 
 
 # If a module is not present, you will need to install : https://docs.microsoft.com/en-us/powershell/module/powershellget/install-module?view=powershell-7.2
 Install-Module -Name O365CentralizedAddInDeployment
 
 Import-Module -Name O365CentralizedAddInDeployment
+
+# -Force parameter - can be used with install/import module; if module is already loaded in the session
 
 # After installing and importing the module, we can start using functions from that module
 Connect-OrganizationAddInService
@@ -234,6 +270,7 @@ Add-PSSnapin Microsoft.Exchange.Management.PowerShell.E2010
 # To connecto to EXO we don't need any module; We are connecting using a PS Session (so the module will be automatically downloaded when importing PS Session)
 # To connect to MSOLService : https://docs.microsoft.com/en-us/powershell/azure/active-directory/install-msonlinev1?view=azureadps-1.0
 # Each cmdlet run with |fl in modules used via Powershell Remoting will return a RunspaceID
+
 # This RunspaceID uniquely identifies the Powershell session used to run the cmdlets
 # The RunspaceID has no relation to the object/configuration retrieved by the cmdlet
 
@@ -430,6 +467,7 @@ $FormatEnumerationLimit = -1
 Get-Mailbox admin | fl EmailAddresses
 #endregion
 
+Get-Mailbox admin | Select-Object -ExcludeProperty UserCertificate 
 #region Sorting: Sort-Object
 # You can sort an object on a property. The default sorting is ascending.
 # If you need to sort descending you need to specify the switch -Descending
@@ -453,10 +491,12 @@ the "Format-Table" will be chosen and if there are 5 or more properties the "For
 get-mailbox admin |fl > test.txt -> write
 # get-mailbox admin |fl >> test.txt -> append
 Export-csv -Path c:\output1.csv -NoTypeInformation
+
 Export-clixml -Path C:\output2.xml -Depth 5 
 #default depth is 2, which may not always be sufficient to expand all objects, for example:
 $msolUser = Read-Host
 (Get-MsolUser -UserPrincipalName $msolUser).licenses[0].servicestatus
+
 Import-clixml C:\output2.xml
 Out-File -FilePath C:\output3.txt
 Out-GridView
@@ -469,8 +509,8 @@ ConvertTo-Json
 #>
 
 Get-Mailbox | select -First 10 | Out-GridView
-$mbx = Get-Mailbox -SoftDeletedMailbox | Out-GridView -PassThru
-
+$mbx = Get-Mailbox -SoftDeletedMailbox | Out-GridView -OutputMode single
+$mbxs = Get-Mailbox -SoftDeletedMailbox | Out-GridView -PassThru
 #endregion
 
 
@@ -568,8 +608,10 @@ $<collection> |  ForEach-Object { code block}
 for(i=0; i<10;i++){}
 $i=0; for(;;){Write-Host $i; $i++; if($i -eq 10){break;}} #simulates a while(true) loop with a condition to break out of the loop
 
+# foreach - keyword
 foreach ($mbx in $mbxs){$mbx}
 
+# foreach alias for Foreach-Object cmdlet
 $mbxs | foreach {$_}
 get-mailbox | foreach {$_}
 
@@ -621,7 +663,7 @@ write-host after
 
 $ErrorActionPreference = "Continue"
 $ErrorActionPreference = 'Stop'
-try { get-mailbox adfad}
+try { get-mailbox -Erroraction Stop adfad}
 catch{ Write-Host "fadfafad"}
 finally {}
 
