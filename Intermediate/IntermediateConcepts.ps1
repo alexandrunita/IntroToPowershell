@@ -147,3 +147,45 @@ $r2.Report.TargetMailboxSize
 
 
 #endregion
+
+
+# ==-=-==-=-=-=-=-=-=-=
+
+trow
+trow Exception("My exception")
+trow RuntimeException
+
+function TrapTest {
+    trap {"Error found: $_"}
+    thiswontwork
+}
+
+
+trap{ write-host $_; }
+throw "blah"
+write-host after
+
+###
+
+# from external, you'll get the code
+$LASTEXITCODE
+
+###
+
+#region Function
+Function Test
+{
+[CmdletBinding(SupportsShouldProcess)] # if error inside function, it will be visible outside the function
+Param(
+[Parameter(Mandatory=$True, HelpMessage = "Input your name", Position=0)]
+[Alias("Numelemeu")]
+[string] $name
+)
+
+$res = $PSCmdlet.ShouldContinue($name,"Title");
+return $res
+}
+$newRes = Test -name "Victoras"
+$newRes = Test -Numelemeu "Victoras"
+
+#endregion 

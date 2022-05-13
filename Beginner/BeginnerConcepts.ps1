@@ -641,26 +641,14 @@ for ($i=0;$i -lt ($mbxs.length); $i++)
 # To keep it simple you can use bellow command to see last error details
 $error[0].Exception | fl * -Force
 
-# from external, you'll get the code
-$LASTEXITCODE
+$e = $error[0];
+$e.Exception | fl * -f
+$e.Exception.SerializedRemoteException | fl * -f
 
 # from PS you'll get true/false depending on the result of last cmdlet
 $?
 
-trow
-trow Exception("My exception")
-trow RuntimeException
-
-function TrapTest {
-    trap {"Error found: $_"}
-    thiswontwork
-}
-
-
-trap{ write-host $_; }
-throw "blah"
-write-host after
-
+# try / catch
 $ErrorActionPreference = "Continue"
 $ErrorActionPreference = 'Stop'
 try { get-mailbox -Erroraction Stop adfad}
@@ -697,27 +685,9 @@ Get-Mailbox cloud2 |fl *email*
 
 
 
-#region Function
-Function Test
-{
-[CmdletBinding(SupportsShouldProcess)]
-Param(
-[Parameter(Mandatory=$True, HelpMessage = "Input your name", Position=0)]
-[Alias("Numelemeu")]
-[string] $name
-)
-
-$res = $PSCmdlet.ShouldContinue($name,"Title");
-return $res
-}
-$newRes = Test -name "Victoras"
-$newRes = Test -Numelemeu "Victoras"
-
-#endregion 
-
 #region Array/HashTable
-# @() - Array
-# @{} - HashTable
+# @() - Array - data collection, indexable, immutable
+# @{} - HashTable - key value collection (index - unsorted key value pair)
 # $hashtable = @{name="Victor";age="36"}
 
 $collection= @()
@@ -732,9 +702,13 @@ $collection | foreach{Write-host($($_.Nume))}
 #endregion
 
 #region Split
+# dotnet embedded function to split string
 
 $a = "this is a sample text"
 $a.Split(" ")[0]
+
+$a | Get-Member
+$a.ToUpper()
 
 #endregion 
 
