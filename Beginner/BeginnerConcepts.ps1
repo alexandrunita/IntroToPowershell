@@ -718,11 +718,14 @@ $a.ToUpper()
 - Check if Customer is having at least minimum required version of PowerShell (example: 3)
 - Start-Transcript
 - history
-- Run "$FormatEnumerationLimit = -1" before collecting information
+- Run "$FormatEnumerationLimit = -1" before collecting formatted information
 - If you check all objects please user "-Resultsize Unlimited", or "-All" depends on the cmdlet used
-- Always filter on the left side and format only on the right side
-- Always run the cmdlet on your side before sending them to customers
-- If more cmdlets run to change something, always use Micorosoft disclaimer
+- Always filter on the left side of the pipeline and format only on the right side pipeline
+- Always run the cmdlet on your side before sending them to customers!!
+- We do not provide scripts, but if we do, it is as a best effort and they are to be considered as sample scripts for the customer insipire from, when creating their own. Such sample scripts must be accompaied by our disclaimer:
+
+    This is a sample script and sample scripts are not supported under any Microsoft standard support program or service. The sample scripts are provided AS IS without warranty of any kind. Microsoft further disclaims all implied warranties including, without limitation, any implied warranties of merchantability or of fitness for a particular purpose. The entire risk arising out of the use or performance of the sample scripts and documentation remains with you. In no event shall Microsoft, its authors, or anyone else involved in the creation, production, or delivery of the scripts be liable for any damages whatsoever (including, without limitation, damages for loss of business profits, business interruption, loss of business information, or other pecuniary loss) arising out of the use of or inability to use the sample scripts or documentation, even if Microsoft has been advised of the possibility of such damages.
+
 - Run the cmdlets first with -WhatIf
 - The most important cmdlets are:
     Get-Help
@@ -831,8 +834,15 @@ $calendars | % {Set-MailboxFolderPermission -Identity $_.Identity -User Default 
 
 
 [string]$myvar2 = 1
+$myvar2.GetType()
 $myvar1 = 1
 $myvar1.GetType()
+
 Get-Command -ParameterName UserPrincipalName
 
 @( “machine1” , “machine2” , “machine3”).GetType()
+$arr = @( “machine1” , “machine2” , “machine3”)
+$arr | Get-Member
+$arr[0] | Get-Member
+$arr[0].GetType()
+$arr.GetType()
