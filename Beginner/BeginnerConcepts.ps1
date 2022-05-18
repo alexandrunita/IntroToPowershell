@@ -60,7 +60,7 @@ Get-Alias dir
 # For waht is cd alias?
 Get-Alias cd
 
-# aliases are not supported to use with Invoke-Command, and are not recommended in scripting
+# aliases are not supported to use with Invoke-Command, and are not recommended in scripting !!!
 
 #endregion
 
@@ -98,7 +98,7 @@ help about*
 help about_Operators
 help about_Aliases
 help about_Arithmetic_Operators
-# help about* - very useful for learning usage scenario
+# help about* - very useful for learning usage scenario !!!
 
 # We can also update-help from a saved file via save-help if without Internet Connection
 Update-Help -SourcePath %%
@@ -210,11 +210,20 @@ History | select CommandLine
 history | select -last 10
 # recall what you've ran 
 # see all cmdlets ran if you forgot to start transcript - export for documenting
+Get-History | Out-File -FilePath c:\PS1\session_history.txt
 
 Invoke-History 
 # can re-run a specific cmdlet from history - position no. based
 r 34
 get-alias r
+
+# clear history
+Clear-History
+Clear-History -Count 5 -Newest
+(Get-PSReadlineOption).HistorySavePath
+Get-Content -Path (Get-PSReadlineOption).HistorySavePath
+Clear-Content -Path (Get-PSReadlineOption).HistorySavePath
+
 #endregion
 
 #region Snapin and Modules
@@ -231,28 +240,21 @@ get-alias r
 
 Get-Module
 Get-Module -ListAvailable
-    Import-Module Dirsync
+    Import-Module Msonline
     Import-Module ActiveDirectory 
 
 # If a module is not present, you will need to install : https://docs.microsoft.com/en-us/powershell/module/powershellget/install-module?view=powershell-7.2
-Install-Module -Name O365CentralizedAddInDeployment
-
-Import-Module -Name O365CentralizedAddInDeployment
 
 # -Force parameter - can be used with install/import module; if module is already loaded in the session
 
-# After installing and importing the module, we can start using functions from that module
-Connect-OrganizationAddInService
+# After installing and importing the module, we can start using cmdlets from that module
 
-Get-OrganizationAddIn
-
-foreach($G in (Get-organizationAddIn)){Get-OrganizationAddIn -ProductId $G.ProductId | Format-List}
-
-# show cmdlets from Dirsync module
-Get-Command -module Dirsync
+# example2: show cmdlets from Msonline module
+Get-Command -module Msonline
 # To retrieve commands from temporary modules downloaded on the fly by a connection script, such as EXO Powershell module, run:
 Get-Command -module "tmp*"
-Get-Command -module tmp_nqerwha0.c2h
+Get-Module "tmp*"
+Get-Command -module tmp_5wmmdo5h.rt0
 
 # modules locations
 $env:PSModulePath
@@ -269,8 +271,8 @@ Add-PSSnapin Microsoft.Exchange.Management.PowerShell.E2010
 
 # To connecto to EXO we don't need any module; We are connecting using a PS Session (so the module will be automatically downloaded when importing PS Session)
 # To connect to MSOLService : https://docs.microsoft.com/en-us/powershell/azure/active-directory/install-msonlinev1?view=azureadps-1.0
-# Each cmdlet run with |fl in modules used via Powershell Remoting will return a RunspaceID
 
+# Each cmdlet run with |fl in modules used via Powershell Remoting will return a RunspaceID
 # This RunspaceID uniquely identifies the Powershell session used to run the cmdlets
 # The RunspaceID has no relation to the object/configuration retrieved by the cmdlet
 
@@ -304,9 +306,8 @@ ${variable-name} = "string"
 dir variable: #System path where we can explore all current variables in the current powershell session
 Get-Variable
 
-# Optional
 # Single quotes vs double quotes (and back tick :) )
-$var = "Victor"
+$var = "Alex"
 $v1 = "My name is $var"
 $v1
 $v2 = 'My name is $var'
@@ -397,6 +398,8 @@ Other operators:
 By default, all comparison operators are case-insensitive. To make a comparison operator case-sensitive, precede the operator name with a "c".
 For example, the case-sensitive version of "-eq" is "-ceq".
 To make the case-insensitivity explicit, precede the operator with an "i". For example, the explicitly case-insensitive version of "-eq" is "ieq".
+
+For additional details on comparison operators, you can review: https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_comparison_operators?view=powershell-7.2
 #>
 #endregion
 
@@ -410,8 +413,9 @@ An object is made up of three types of data:
 - the objects type (string/integer/float number/array/etc..)
 - its methods (aka functions/actions)
 - its properties. (aka attributes)
-More objects are a Collection (the result of the bellow command).
+More objects constitute a Collection.
 #>
+
 Get-Mailbox admin | Get-Member
 
 # Get-Member (gm alias)
@@ -421,6 +425,9 @@ Get-Mailbox admin | Get-Member
 #region Custom Properties
 #@{Name='<Property Name>'; Expression= {<ExpressionValue>}}
 Get-Mailbox admin | Select-Object name, PrimarySmtpAddress, @{Name='Mailbox Creation Year'; Expression= {$_.WhenCreated.Year}} 
+(Get-Mailbox admin).WhenCreated | Get-Member
+(Get-Mailbox admin).WhenCreated.Year
+(Get-Mailbox admin).WhenCreated.ToUniversalTime()
 #endregion Custom Properties
 
 #region Pipeline
@@ -429,22 +436,24 @@ Get-Mailbox admin | Select-Object name, PrimarySmtpAddress, @{Name='Mailbox Crea
 # we need to create a custom one based the information we have on the left side
 
 # For example, we cannot get the MSOLGroup as ObjectID Parameter is not found on the output of the cmdlet on the left:
-Get-DistributionGroup ADList@liviunita.onmicrosoft.com | Get-MsolGroup
+Get-DistributionGroup testalert1@axul.onmicrosoft.com | Get-MsolGroup
 
-# To make this, work we can do something like:
+Get-Command Get-MsolGroup -Syntax  
 
-$mailboxes = New-Object Object | Select-Object -Property Name,EmailAddress
-$mailboxes.Name = "liviu"
-$mailboxes.EmailAddress = "liviu@liviunita.onmicrosoft.com"
+# Before making the above command work, let's create a custom object, define its properties and add values to them:
 
-# alternatively, we can import from a CSV $mailboxes = Import-Csv "test.csv"
-$mailboxes | Get-Mailbox
-Help Get-Mailbox -Full
+$mailbox = New-Object Object | Select-Object -Property Name,PrimarySmtpAddress
+$mailbox.Name = "testalert1"
+$mailbox.PrimarySmtpAddress = "testalert1@axul.onmicrosoft.com"
+$mailbox
 
-$mailboxes | Select-Object @{Name='Identity'; expression = {$_.EmailAddress}} | Get-Mailbox
+# If we want to create a custom object based on the output of a cmdlet with specific property names:
+
+$mailbox2 = Get-Mailbox admin@axul.onmicrosoft.com | Select-Object @{Name='Label1'; expression = {$_.PrimarySmtpAddress}}, @{Name='Label2'; expression = {$_.ExternalDirectoryObjectId}}
+$mailbox2
 
 # Going back to example of the Distribution, we can fix the pipeline input matching for MsolGroup like this:
-Get-DistributionGroup ADList@liviunita.onmicrosoft.com | Select-Object @{Name='ObjectId'; expression = {$_.ExternalDirectoryObjectId}}| Get-MsolGroup
+Get-DistributionGroup testalert1@axul.onmicrosoft.com | Select-Object @{Name='ObjectId'; expression = {$_.ExternalDirectoryObjectId}}| Get-MsolGroup
 
 #endregion
 
@@ -458,22 +467,23 @@ Get-Mailbox admin |Select-Object Name, PrimarySmtpAddress,ThrottlingPolicy  |gm
 # You can use switches:
 #- Last 10
 #- First 5
-Get-Mailbox -ResultSize Unlimited | select -last 10
+Get-Mailbox -ResultSize Unlimited | select -last 5
 
 # a property can be expanded:
-Get-Mailbox admin |Select-Object -ExpandProperty EmailAddresses
+Get-Mailbox admin | Select-Object -ExpandProperty EmailAddresses
 (Get-Mailbox admin).EmailAddresses
 $FormatEnumerationLimit = -1
 Get-Mailbox admin | fl EmailAddresses
-#endregion
 
 Get-Mailbox admin | Select-Object -ExcludeProperty UserCertificate 
+#endregion
+
 #region Sorting: Sort-Object
 # You can sort an object on a property. The default sorting is ascending.
 # If you need to sort descending you need to specify the switch -Descending
+
 Get-Mailbox |Select-Object Name, PrimarySmtpAddress |Sort-Object Name -Descending
 #endregion
-
 
 #region Formatting & Exporting
 <#
@@ -482,17 +492,19 @@ The results can be piped to:
 Format-List (alias fl)
 Format-Table -Wrap -AutoSize (alias ft -w -A)
 
-In case no special formatting was created for the command if we have 4 or less properties
-the "Format-Table" will be chosen and if there are 5 or more properties the "Format-List" will be used.
+In case no special formatting was created for the command, if we have 4 or less properties
+the "Format-Table" will be automatically chosen and if there are 5 or more properties the "Format-List" will be used.
 
 !!! After an output was formatted you cannot export to CSV, XML !!! You can only out to host, file (txt), printer, string.
 
 # Exporting commands results (after |)
 get-mailbox admin |fl > test.txt -> write
 # get-mailbox admin |fl >> test.txt -> append
-Export-csv -Path c:\output1.csv -NoTypeInformation
 
-Export-clixml -Path C:\output2.xml -Depth 5 
+get-mailbox admin | Export-csv -Path c:\output1.csv -NoTypeInformation
+
+get-mailbox admin | Export-clixml -Path C:\output2.xml -Depth 5 
+
 #default depth is 2, which may not always be sufficient to expand all objects, for example:
 $msolUser = Read-Host
 (Get-MsolUser -UserPrincipalName $msolUser).licenses[0].servicestatus
@@ -511,7 +523,22 @@ ConvertTo-Json
 Get-Mailbox | select -First 10 | Out-GridView
 $mbx = Get-Mailbox -SoftDeletedMailbox | Out-GridView -OutputMode single
 $mbxs = Get-Mailbox -SoftDeletedMailbox | Out-GridView -PassThru
+
+# useful to export as XML for offline troubleshooting:
+
+get-mailbox -ResultSize unlimited | Export-clixml -Path C:\PS1\all_mailboxes.xml
+
+$mbxs = Import-clixml -Path C:\PS1\all_mailboxes.xml
+
+$mbxs | Where-Object {$_.RecipientTypeDetails -like 'SharedMailbox'} | Select-Object alias, PrimarySmtpAddress, UserPrincipalName | Sort-Object UserPrincipalName -Descending | ft
 #endregion
+
+# Where-Object
+Get-Mailbox | Where-Object {$_.PrimarySmtpAddress -eq "admin@axul.onmicrosoft.com"}
+Get-Mailbox | ? PrimarySmtpAddress -eq "admin@axul.onmicrosoft.com"
+
+Get-Mailbox |  ? AuditEnabled -eq "False" | set-mailbox -AuditEnabled $true -confirm:$False
+Get-Mailbox |  ? LitigationHoldEnabled -eq "True"
 
 
 #region Loops
@@ -563,16 +590,6 @@ switch (4, 2)
 
 It is four.
 
-# TODO - check if we need to add if/elseif/else examples
-
-# Where-Object
-Get-Mailbox | Where-Object {$_.PrimarySmtpAddress -eq "admin@vilega.onmicrosoft.com"}
-Get-Mailbox | ? PrimarySmtpAddress -eq "admin@vilega.onmicrosoft.com"
-
-Get-Mailbox |  ? AuditEnabled -eq "False" | set-mailbox -AuditEnabled $true -confirm:$False
-Get-Mailbox |  ? LitigationHoldEnabled -eq "True"
-
-
 
 <# Conditional Logic - Loops
 do while - Script block executes as long as condition value = True.
@@ -606,6 +623,7 @@ $<collection> |  ForEach-Object { code block}
 #>
 
 for(i=0; i<10;i++){}
+
 $i=0; for(;;){Write-Host $i; $i++; if($i -eq 10){break;}} #simulates a while(true) loop with a condition to break out of the loop
 
 # foreach - keyword
@@ -651,35 +669,35 @@ $?
 # try / catch
 $ErrorActionPreference = "Continue"
 $ErrorActionPreference = 'Stop'
-try { get-mailbox -Erroraction Stop adfad}
-catch{ Write-Host "fadfafad"}
+
+try { get-mailbox admin -Erroraction Stop}
+catch{ Write-Host "Something went wrong..."}
 finally {}
 
 #endregion
 
 #region to add a new value, keeping old values on a property (to add/remove email address, domains, IPs, etc...)
-Get-Mailbox cloud2 |fl *email*
+Get-Mailbox user8 |fl *email*
 # To add v1
-$mbx =  (Get-Mailbox cloud2).EmailAddresses
-$mbx.Add("smtp:cloud2_1@vilega.onmicrosoft.com")
-$mbx
-Set-Mailbox cloud2 -EmailAddresses $mbx
-Get-Mailbox cloud2 |fl *email*
+$mbx =  (Get-Mailbox user8).EmailAddresses
+$mbx.Add("smtp:user8abc@axul.onmicrosoft.com")
+Set-Mailbox user8 -EmailAddresses $mbx
+Get-Mailbox user8 |fl *email*
 
 # To remove v1
-$mbx =  (Get-Mailbox cloud2).EmailAddresses
+$mbx =  (Get-Mailbox user8).EmailAddresses
 $mbx
-$mbx.Remove("smtp:cloud2_1@vilega.onmicrosoft.com")
+$mbx.Remove("smtp:user8abc@axul.onmicrosoft.com")
 $mbx
-Set-Mailbox cloud2 -EmailAddresses $mbx
-Get-Mailbox cloud2 |fl *email*
+Set-Mailbox user8 -EmailAddresses $mbx
+Get-Mailbox user8 |fl *email*
 
 # To add / remove v2
-Get-Mailbox cloud2 |fl *email*
-Set-Mailbox cloud2 -EmailAddresses @{add="smtp:cloud2_1@vilega.onmicrosoft.com"}
-Get-Mailbox cloud2 |fl *email*
-Set-Mailbox cloud2 -EmailAddresses @{remove="smtp:cloud2_1@vilega.onmicrosoft.com"}
-Get-Mailbox cloud2 |fl *email*
+Get-Mailbox user8 |fl *email*
+Set-Mailbox user8 -EmailAddresses @{add="smtp:user8abc@axul.onmicrosoft.com"}
+Get-Mailbox user8 |fl *email*
+Set-Mailbox user8 -EmailAddresses @{remove="smtp:user8abc@axul.onmicrosoft.com"}
+Get-Mailbox user8 |fl *email*
 
 #endregion
 
@@ -693,11 +711,11 @@ Get-Mailbox cloud2 |fl *email*
 $collection= @()
 $object1 = New-Object PSObject
 $object2 = New-Object PSObject
-$object1 |Add-Member -Name Nume -Value "Victor" -MemberType NoteProperty
-$object2 |Add-Member -Name Nume -Value "Andrei" -MemberType NoteProperty 
+$object1 | Add-Member -Name Name -Value "Victor" -MemberType NoteProperty
+$object2 | Add-Member -Name Name -Value "Andrei" -MemberType NoteProperty 
 $collection+= $object1
 $collection+= $object2
-$collection | foreach{Write-host($($_.Nume))}
+$collection | foreach{Write-host($($_.Name))}
 
 #endregion
 
@@ -739,7 +757,6 @@ $a.ToUpper()
 #endregion
 
 
-#Dif between contains, match,like
 
 "10-20" -Contains "-"
 "10-20".Contains("-")
@@ -750,25 +767,12 @@ $a.ToUpper()
 @("10","20","30") -contains "20"
 
 
-$AllMbx = get-mailbox 
-
-$AllMbx.GetType()
-$mbx= get-mailbox test21
-$AllMbx.Contains('test21')
-([System.Collections.ArrayList]$AllMbx).Contains($mbx)
-$AllMbx.Contains($mbx)
-
-$mbx=$AllMbx[0]
-$AllMbx.Contains($mbx)
-Start-Process "http://www.computerperformance.co.uk/powershell/powershell_conditional_operators.htm"
-
 get-help System.Collections.ArrayList
+
+# get more ingo on hashtables
 Get-Help about_Hash_Tables 
-
 get-help ConvertFrom-StringData
-
 ConvertFrom-StringData
-
 $p.keys | foreach {$p.$_.handles}
 
 # Optimizing PowerShell Scripts
@@ -794,13 +798,8 @@ foreach ($mb in get-CASmailbox ){$_.alias}
 (Measure-Command $block1).TotalMilliseconds
 (Measure-Command $block2).TotalMilliseconds
 
-foreach ($character in [char[]]”Poshoholic”) { if (@(‘a’,’e’,’i’,’o’,’u’) -contains $character ) { continue } $character }
-[char[]]”Poshoholic” | foreach { if (@(‘a’,’e’,’i’,’o’,’u’) -contains $_ ) { continue } $_ }
-
-$var1 = @("1","2")
-$var2 = "1","2"
-$var1.GetType()
-$var2.GetType()
+foreach ($character in [char[]]"aeioubcd") { if (@('a','e','i','o','u') -contains $character ) { continue } $character }
+[char[]]"aeioubcd" | foreach { if (@('a','e','i','o','u') -contains $_ ) { continue } $_ }
 
 
 #Begin
@@ -813,17 +812,12 @@ Stop-transcript
 #End
 
 
-
-
-get-mailbox admin |fl *copy*
-
-[string]::IsNullOrEmpty
+$string1 = $null
+IF ([string]::IsNullOrWhitespace($string1)){'empty'} else {'not empty'}
 
 
 Get-OrganizationConfig |fl *block*
 help Set-OrganizationConfig -Parameter IPListBlocked
-
-Get-ClientAccessRule
 
 
 $calendars = Get-Mailbox -RecipientTypeDetails UserMailbox -ResultSize Unlimited | Get-MailboxFolderStatistics | ? {$_.FolderType -eq "Calendar"} | select @{n="Identity"; e={$_.Identity.Replace("\",":\")}}
@@ -838,7 +832,6 @@ $myvar2.GetType()
 $myvar1 = 1
 $myvar1.GetType()
 
-Get-Command -ParameterName UserPrincipalName
 
 @( “machine1” , “machine2” , “machine3”).GetType()
 $arr = @( “machine1” , “machine2” , “machine3”)
@@ -846,3 +839,30 @@ $arr | Get-Member
 $arr[0] | Get-Member
 $arr[0].GetType()
 $arr.GetType()
+
+
+
+Write-Host "Type 'Yes' proceed or 'No' to stop and exit"   
+    Do {
+        [string]$option = read-host "Please type 'Yes' proceed or 'No' to stop and exit"
+        $option = $option.ToLower()
+    } Until (($option -eq "yes") -or ($option -eq "no"))
+        
+    If ($Option -eq "yes") { 
+        Write-Host -ForegroundColor Yellow "Proceeding..."
+    }
+    Else {
+        Write-Host -ForegroundColor Yellow "Exitting..."
+    }
+
+
+
+New-MoveRequest user8
+Get-MoveRequestStatistics user88 | fl status
+Do {
+        $stats = Get-MoveRequestStatistics -Identity "user88"
+        Write-Host '*' -NoNewline
+        Start-Sleep -Seconds 5
+    } While ($stats.Status -ne 'Completed')
+    Write-Host "`n> Move request completed"
+
