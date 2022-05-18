@@ -189,3 +189,21 @@ $newRes = Test -name "Victoras"
 $newRes = Test -Numelemeu "Victoras"
 
 #endregion 
+
+# region - TO REIEW
+
+
+$AllMbx = get-mailbox 
+
+$AllMbx.GetType()
+$mbx= get-mailbox test4
+$AllMbx.Contains('test4')
+([System.Collections.ArrayList]$AllMbx).Contains($mbx)
+$AllMbx.Contains($mbx)
+
+$mbx=$AllMbx[0]
+$AllMbx.Contains($mbx)
+Start-Process "http://www.computerperformance.co.uk/powershell/powershell_conditional_operators.htm"
+
+
+# endregion
