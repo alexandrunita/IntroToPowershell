@@ -1,5 +1,9 @@
 #region WhatIsPowerShell
-Write-Host "Windows PowerShell is an interactive object-oriented command environment with scripting language features that utilizes small programs called cmdlets to simplify configuration, administration, and management of heterogeneous environments in both standalone and networked typologies by utilizing standards-based remoting protocols."
+Write-Host "PowerShell is a cross-platform task automation solution made up of a command-line shell, a scripting language, and a configuration management framework. PowerShell runs on Windows, Linux, and macOS."
+
+# PowerShell is built on the .NET Common Language Runtime (CLR). All inputs and outputs are .NET objects. 
+#For full description: https://docs.microsoft.com/en-us/powershell/scripting/overview?view=powershell-7.2
+
 <# Powershell editors:
 - PowerShell
 - Integrated Scripting Environment (ISE)
