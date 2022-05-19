@@ -207,6 +207,7 @@ Write-Host "!!! You should avoid partial parameter names, and positional paramet
 
 #region History
 # History of last commands
+Get-History
 History
 history | select -First 1 | fl *
 History | select CommandLine
@@ -427,10 +428,12 @@ Get-Mailbox admin | Get-Member
 
 #region Custom Properties
 #@{Name='<Property Name>'; Expression= {<ExpressionValue>}}
-Get-Mailbox admin | Select-Object name, PrimarySmtpAddress, @{Name='Mailbox Creation Year'; Expression= {$_.WhenCreated.Year}} 
+
 (Get-Mailbox admin).WhenCreated | Get-Member
 (Get-Mailbox admin).WhenCreated.Year
 (Get-Mailbox admin).WhenCreated.ToUniversalTime()
+
+Get-Mailbox admin | Select-Object name, PrimarySmtpAddress, @{Name='Mailbox Creation Year'; Expression= {$_.WhenCreated.Year}} 
 #endregion Custom Properties
 
 #region Pipeline
@@ -675,7 +678,7 @@ $ErrorActionPreference = 'Stop'
 
 try { get-mailbox admin -Erroraction Stop}
 catch{ Write-Host "Something went wrong..."}
-finally {}
+finally {write-host "Regardless..."}
 
 #endregion
 
