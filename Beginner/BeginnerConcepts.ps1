@@ -131,11 +131,10 @@ get-help Set-Mailbox -online
 
 # to explore all options of Get-Help cmdlet, check the help repository:
 Get-Help Get-Help
-# Help structured on topics (like user manual for powershell). Recommend to use it !!!
 
+# Help structured on topics (like user manual for powershell). Recommend to use it !!!
 # We can use alias "help" for Get-Help cmdlet
 help about
-
 
 #endregion HelpTool
 
@@ -157,7 +156,7 @@ Get-Command -ParameterName UserPri*
 #Any command that produces output on the screen is either an object or a collection of objects, and can be piped to Get-Member in order to see the events, alias properties, methods, properties and note properties
 
 # to check object type of each entry
-Get-Mailbox | Get-Member
+Get-Service | Get-Member
 
 # to check the type of output object/collection
 (Get-Service).GetType()
