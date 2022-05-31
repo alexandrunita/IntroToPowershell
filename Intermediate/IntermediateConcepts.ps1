@@ -136,38 +136,43 @@ $i=0; for(;;){Write-Host $i; $i++; if($i -eq 10){break;}} #simulates a while(tru
 $mbxs = Get-Mailbox
 foreach ($mbx in $mbxs){$mbx.alias}
 
-### !!!!!!!!! !!!!!!!!!!!!!!!!!!!!
 
 # foreach alias for Foreach-Object cmdlet
+$mbxs = Get-Mailbox
 $mbxs | foreach {$_}
 get-mailbox | foreach {$_}
+$mbxs | ForEach-Object {$_.alias}
 
 For($i=0;$i -le 4;$i++) {
     write-host($i);
 }
 
-$mbxs = get-mailbox
-$mbxs.GetType()
-$mbxs[0]
-foreach ($mbx in $mbxs)
-{
-    $mbx.alias
-}
-
-$mbxs | ForEach-Object {$_.alias}
 
 for ($i=0;$i -lt ($mbxs.length); $i++)
 {
     $mbxs[$i].alias
 }
 
+$mbxs.length
+$mbxs.count # count is alias for length, for more details check the help about arrays: help about*array*
+
+$a = @()  # new array
+$a.GetType().getproperties() | ?{$_.Name -match "length"}
+
+$a.get_Length()
+
+
 #endregion
 
 #region Errors
 # Muliple ways to do it
 # To keep it simple you can use bellow command to see last error details
+
+$error # all errors from the current session - array
+$error[0] # last error in $error array
 $error[0].Exception | fl * -Force
 
+#additional last error details:
 $e = $error[0];
 $e.Exception | fl * -f
 $e.Exception.SerializedRemoteException | fl * -f
@@ -179,9 +184,15 @@ $?
 $ErrorActionPreference = "Continue"
 $ErrorActionPreference = 'Stop'
 
+get-mailbox joker
+get-mailbox admin
+
+
 try { get-mailbox admin -Erroraction Stop}
 catch{ Write-Host "Something went wrong..."}
 finally {write-host "Regardless..."}
+
+### to do : rect to error !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 #endregion
 
