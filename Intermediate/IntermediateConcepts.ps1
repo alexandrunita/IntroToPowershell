@@ -165,8 +165,10 @@ $a.get_Length()
 #endregion
 
 #region Errors
-# Muliple ways to do it
+
+# Muliple ways to do it, for more details: https://docs.microsoft.com/en-us/powershell/scripting/learn/deep-dives/everything-about-exceptions?view=powershell-7.2
 # To keep it simple you can use bellow command to see last error details
+
 
 $error # all errors from the current session - array
 $error[0] # last error in $error array
@@ -181,6 +183,12 @@ $e.Exception.SerializedRemoteException | fl * -f
 $?
 
 # try / catch
+
+try { get-mailbox admin -Erroraction Stop}
+catch{ Write-Host "Something went wrong..."}
+finally {write-host "Regardless..."}
+
+
 $ErrorActionPreference = "Continue"
 $ErrorActionPreference = 'Stop'
 
@@ -188,6 +196,7 @@ get-mailbox joker
 get-mailbox admin
 Get-Recipient joker
 
+# Example 1:
 try {get-mailbox joker -Erroraction Stop}
 catch{ 
     If ($error[0].Exception -match "couldn't be found on") {
@@ -200,32 +209,30 @@ catch{
 }   
 finally {write-host "Check finished"}
 
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Inside the catch block, there's an automatic variable ($PSItem or $_) of type ErrorRecord that contains the details about the exception.
+# Example 2:
+
 try {get-mailbox joker -Erroraction Stop}
 catch{ 
     If ($error[0].Exception -match "couldn't be found on") {
-        $error.Clear()
-        try {Get-Recipient joker -ErrorAction continue}
-        catch {if}
-        if ($error[0].Exception -match "couldn't be found on") { write-host "Could not find a mailbox or recipient"}
+        Get-Recipient joker -ErrorAction silentlycontinue
+        if ($PSItem.Exception -match "couldn't be found on") { write-host "Could not find a mailbox or recipient"}
         
         if(!$error) {Write-Host "Recipient found"}
     }
 }   
 finally {write-host "Check finished"}
 
-# ErrorAction silentlycontinue does not catch error
+
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+# ErrorAction silentlycontinue does not increment $error variable, but if you are inside catch, you'll see the error in $PSItem.Exception
+
 $error.Clear()
 Get-Recipient joker -ErrorAction silentlycontinue
 $error[0]
 
-### react to error
-
-try { get-mailbox joker -Erroraction Stop}
-catch{ Write-Host "Something went wrong..."}
-finally {write-host "Regardless..."}
-
-#endregion
+#endregion Errors
 
 
 #region to add a new value, keeping old values on a property (to add/remove email address, domains, IPs, etc...)
