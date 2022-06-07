@@ -186,15 +186,47 @@ $ErrorActionPreference = 'Stop'
 
 get-mailbox joker
 get-mailbox admin
+Get-Recipient joker
 
+try {get-mailbox joker -Erroraction Stop}
+catch{ 
+    If ($error[0].Exception -match "couldn't be found on") {
+        $error.Clear()
+        Get-Recipient joker -ErrorAction continue
+        if ($error[0].Exception -match "couldn't be found on") { write-host "Could not find a mailbox or recipient"}
+        
+        if(!$error) {Write-Host "Recipient found"}
+    }
+}   
+finally {write-host "Check finished"}
 
-try { get-mailbox admin -Erroraction Stop}
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+try {get-mailbox joker -Erroraction Stop}
+catch{ 
+    If ($error[0].Exception -match "couldn't be found on") {
+        $error.Clear()
+        try {Get-Recipient joker -ErrorAction continue}
+        catch {if}
+        if ($error[0].Exception -match "couldn't be found on") { write-host "Could not find a mailbox or recipient"}
+        
+        if(!$error) {Write-Host "Recipient found"}
+    }
+}   
+finally {write-host "Check finished"}
+
+# ErrorAction silentlycontinue does not catch error
+$error.Clear()
+Get-Recipient joker -ErrorAction silentlycontinue
+$error[0]
+
+### react to error
+
+try { get-mailbox joker -Erroraction Stop}
 catch{ Write-Host "Something went wrong..."}
 finally {write-host "Regardless..."}
 
-### to do : rect to error !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
 #endregion
+
 
 #region to add a new value, keeping old values on a property (to add/remove email address, domains, IPs, etc...)
 Get-Mailbox user8 |fl *email*
@@ -582,3 +614,9 @@ Start-Process "http://www.computerperformance.co.uk/powershell/powershell_condit
 
 
 # endregion
+
+# region log processing
+
+get-string # to parse the log (error) 
+
+# endregion log processing
