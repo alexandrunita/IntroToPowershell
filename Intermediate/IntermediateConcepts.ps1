@@ -167,6 +167,7 @@ $a.get_Length()
 #region Errors
 
 # Muliple ways to do it, for more details: https://docs.microsoft.com/en-us/powershell/scripting/learn/deep-dives/everything-about-exceptions?view=powershell-7.2
+# also check: https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_try_catch_finally?view=powershell-7.2
 # To keep it simple you can use bellow command to see last error details
 
 
