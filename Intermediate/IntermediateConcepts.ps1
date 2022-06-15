@@ -197,7 +197,7 @@ get-mailbox joker
 get-mailbox admin
 Get-Recipient joker
 
-# Example 1:
+# Example 1 (catch all):
 try {get-mailbox joker -Erroraction Stop}
 catch{ 
     If ($error[0].Exception -match "couldn't be found on") {
@@ -211,21 +211,23 @@ catch{
 finally {write-host "Check finished"}
 
 # Inside the catch block, there's an automatic variable ($PSItem or $_) of type ErrorRecord that contains the details about the exception.
-# Example 2:
+# Example 2 (multiple catch needs to run as script, not as chain of cmdlets - workaround if () {} before try/multiple catch)
 
-try {get-mailbox joker -Erroraction Stop}
-catch{ 
-    If ($error[0].Exception -match "couldn't be found on") {
-        Get-Recipient joker -ErrorAction silentlycontinue
-        if ($PSItem.Exception -match "couldn't be found on") { write-host "Could not find a mailbox or recipient"}
-        
-        if(!$error) {Write-Host "Recipient found"}
+if ($true) {
+    try {get-mailbox joker -Erroraction Stop
+        get-joker    
     }
-}   
-finally {write-host "Check finished"}
-
-
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    catch [System.Management.Automation.RemoteException] { 
+        If ($error[0].Exception -match "couldn't be found on") {
+            Get-Recipient joker -ErrorAction silentlycontinue
+            if ($PSItem.Exception -match "couldn't be found on") { write-host "Could not find a mailbox or recipient"}
+            
+            if(!$error) {Write-Host "Recipient found"}
+        }
+    }
+    catch {"An error occurred that could not be resolved."}   
+    finally {write-host "Check finished"}
+}
 
 # ErrorAction silentlycontinue does not increment $error variable, but if you are inside catch, you'll see the error in $PSItem.Exception
 
@@ -237,12 +239,22 @@ $error[0]
 
 
 #region to add a new value, keeping old values on a property (to add/remove email address, domains, IPs, etc...)
-Get-Mailbox user8 |fl *email*
+
+Get-Mailbox user8 |fl *emaila*
+
 # To add v1
 $mbx =  (Get-Mailbox user8).EmailAddresses
+    $mbx.GetType() # to check object type - array list
+    $mbx.GetType() | Get-Member # to check all methods available
+    $mbx.GetType().GetMethods().name
+    $mbx.GetType().GetMethod("Add")
+    help ArrayList # see below comment
+    help about_methods
 $mbx.Add("smtp:user8abc@axul.onmicrosoft.com")
 Set-Mailbox user8 -EmailAddresses $mbx
-Get-Mailbox user8 |fl *email*
+Get-Mailbox user8 |fl *emaila*
+
+# Array lists are actually .NET collection objects and are just used by PS (not built into PS). If we want to read about such .net objects (and theyr methods and so on) we need to read the .NET documentation, example: https://docs.microsoft.com/en-us/dotnet/api/system.collections.arraylist?view=net-6.0
 
 # To remove v1
 $mbx =  (Get-Mailbox user8).EmailAddresses
@@ -250,18 +262,18 @@ $mbx
 $mbx.Remove("smtp:user8abc@axul.onmicrosoft.com")
 $mbx
 Set-Mailbox user8 -EmailAddresses $mbx
-Get-Mailbox user8 |fl *email*
+Get-Mailbox user8 |fl *emaila*
 
 # To add / remove v2
-Get-Mailbox user8 |fl *email*
-Set-Mailbox user8 -EmailAddresses @{add="smtp:user8abc@axul.onmicrosoft.com"}
-Get-Mailbox user8 |fl *email*
+Get-Mailbox user8 |fl *emaila*
+Set-Mailbox user8 -EmailAddresses @{add="smtp:user8abc@axul.onmicrosoft.com"} # @ creates on-the-spot an object of type hashtable (key-value pair), and EXO recognizes and instead of overrite will the specified methor (add)
+Get-Mailbox user8 |fl *emaila*
 Set-Mailbox user8 -EmailAddresses @{remove="smtp:user8abc@axul.onmicrosoft.com"}
-Get-Mailbox user8 |fl *email*
+Get-Mailbox user8 |fl *emaila*
 
 #endregion
 
-
+### !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 #region Array/HashTable
 # @() - Array - data collection, indexable, immutable
@@ -433,13 +445,13 @@ Set-Location "C:\Users\vilega\OneDrive\Powershell"
 
 
 #region Pass the value to the console but also re-use it
-Get-mailbox admin2 |select * |Tee-Object -FilePath C:\Users\vilega\OneDrive\Powershell\Trainings\Me\Outputs\GetMailbox.txt 
-Invoke-Item C:\Users\vilega\OneDrive\Powershell\Trainings\Me\Outputs\GetMailbox.txt
+Get-mailbox admin2 |select * |Tee-Object -FilePath C:\mstemp1\GetMailbox.txt 
+Invoke-Item C:\mstemp1\GetMailbox.txt
 
 #endregion
 
 #region Calculate Hash
-# Consider if to include?
+# Consider if to include? !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Computes the hash value for a file by using a specified hash algorithm.
 # Get-FileHash [-Path] <String[]> [-Algorithm <String> {SHA1 | SHA256 | SHA384 | SHA512 | MACTripleDES | MD5 | RIPEMD160} ] [ <CommonParameters>]
 
@@ -455,8 +467,8 @@ Get-FileHash C:\Users\vilega\Desktop\test20mb.file -Algorithm SHA1 | Format-List
 
 $time = Get-Date -Format yyyyMMdd_hhmmss
 $creds = Get-Credential
-Send-MailMessage -SmtpServer smtp.office365.com -Port 587 -UseSsl -From admin@vilega05.onmicrosoft.com -To admin2@vilega05.onmicrosoft.com -Subject "Email_$time" -Body "This is only a test" -Credential $creds -Attachments "C:\Users\vilega\Desktop\test.com"
-Send-MailMessage -SmtpServer vilega05.mail.protection.outlook.com -From admin@vilega05.onmicrosoft.com -To admin2@vilega05.onmicrosoft.com -Subject "Email_$time" -Body "This is only a test" -Credential -Attachments "C:\Users\vilega\Desktop\test.com"
+Send-MailMessage -SmtpServer smtp.office365.com -Port 587 -UseSsl -From admin@axul.onmicrosoft.com -To admin2@axul.onmicrosoft.com -Subject "Email_$time" -Body "This is only a test" -Credential $creds -Attachments "C:\mstemp1\fstat.txt"
+Send-MailMessage -SmtpServer vilega05.mail.protection.outlook.com -From admin@axul.onmicrosoft.com -To admin2@axul.onmicrosoft.com -Subject "Email_$time" -Body "This is only a test" -Credential -Attachments "C:\mstemp1\fstat.txt"
 
 
 #endregion
