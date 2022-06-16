@@ -254,7 +254,7 @@ $mbx.Add("smtp:user8abc@axul.onmicrosoft.com")
 Set-Mailbox user8 -EmailAddresses $mbx
 Get-Mailbox user8 |fl *emaila*
 
-# Array lists are actually .NET collection objects and are just used by PS (not built into PS). If we want to read about such .net objects (and theyr methods and so on) we need to read the .NET documentation, example: https://docs.microsoft.com/en-us/dotnet/api/system.collections.arraylist?view=net-6.0
+# Array lists are actually .NET collection objects and are just used by PS (not built into PS). If we want to read about such .net objects (and their methods and so on) we need to read the .NET documentation, example: https://docs.microsoft.com/en-us/dotnet/api/system.collections.arraylist?view=net-6.0
 
 # To remove v1
 $mbx =  (Get-Mailbox user8).EmailAddresses
@@ -273,24 +273,6 @@ Get-Mailbox user8 |fl *emaila*
 
 #endregion
 
-### !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-#region Array/HashTable
-# @() - Array - data collection, indexable, immutable
-# @{} - HashTable - key value collection (index - unsorted key value pair)
-# $hashtable = @{name="Victor";age="36"}
-
-$collection= @()
-$object1 = New-Object PSObject
-$object2 = New-Object PSObject
-$object1 | Add-Member -Name Name -Value "Victor" -MemberType NoteProperty
-$object2 | Add-Member -Name Name -Value "Andrei" -MemberType NoteProperty 
-$collection+= $object1
-$collection+= $object2
-$collection | foreach{Write-host($($_.Name))}
-
-#endregion
-
 #region Split
 # dotnet embedded function to split string
 
@@ -300,7 +282,153 @@ $a.Split(" ")[0]
 $a | Get-Member
 $a.ToUpper()
 
+# to check all methods for string object, check .NET article: https://docs.microsoft.com/en-us/dotnet/api/system.string?view=net-6.0
+
 #endregion 
+
+
+#region Array/HashTable
+# @() - Array - data collection, indexable, immutable
+
+# Array example: 
+
+$collection= @()
+$object1 = New-Object PSObject
+$object2 = New-Object PSObject
+$object1 | Add-Member -Name Name -Value "Liviu" -MemberType NoteProperty
+$object2 | Add-Member -Name Name -Value "Laurentiu" -MemberType NoteProperty 
+$collection+= $object1
+$collection+= $object2
+$collection | foreach{Write-host($($_.Name))}
+
+$collection.GetType()
+
+# above example has disadvantage with high number of entries - for each new entry added, a new array is created, populated with all members from initial one plus the new member, then delete the old array
+
+# ArrayList example
+
+[System.Collections.ArrayList]$collectionlist= @()
+$object1 = New-Object PSObject
+$object2 = New-Object PSObject
+$object1 | Add-Member -Name Name -Value "Liviu" -MemberType NoteProperty
+$object2 | Add-Member -Name Name -Value "Laurentiu" -MemberType NoteProperty 
+$collectionlist.Add($object1)
+$collectionlist.Add($object2)
+$collectionlist | foreach{Write-host($($_.Name))}
+
+$collectionlist.GetType()
+
+# ArrayList will initially occupy more memory than Array, but adding elements does not incur high demand on resources 
+
+# performance test - array vs arraylist:
+
+$blocka = {
+    $collection= @()
+
+    for($i=0; $i -lt 1000;$i++){
+        
+        write-host $i
+        $object1 = New-Object PSObject
+        $object2 = New-Object PSObject
+        $object1 | Add-Member -Name Name -Value "Liviu$i" -MemberType NoteProperty
+        $object2 | Add-Member -Name Name -Value "Laurentiu$i" -MemberType NoteProperty 
+        $collection+= $object1
+        $collection+= $object2
+    }
+}
+
+(Measure-Command $blocka).TotalMilliseconds
+
+    # $collection | foreach{Write-host($($_.Name))}
+
+
+$blockal = {
+        [System.Collections.ArrayList]$collectionlist= @()
+    
+    for($i=0; $i -lt 1000;$i++){
+            
+            write-host $i
+            $object1 = New-Object PSObject
+            $object2 = New-Object PSObject
+            $object1 | Add-Member -Name Name -Value "Liviu$i" -MemberType NoteProperty
+            $object2 | Add-Member -Name Name -Value "Laurentiu$i" -MemberType NoteProperty 
+            $collectionlist.Add($object1)
+            $collectionlist.Add($object2)
+    }
+}
+    
+(Measure-Command $blockal).TotalMilliseconds   
+
+# get-help System.Collections.ArrayList
+
+# Hashtable example: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# @{} - HashTable - key value collection (index - unsorted key value pair)
+# $hashtable = @{name="Liviu";age="32"}
+
+# get more info on hashtables
+Get-Help about_Hash_Tables 
+get-help ConvertFrom-StringData
+ConvertFrom-StringData
+$p.keys | foreach {$p.$_.handles}
+
+
+#endregion
+
+
+
+# region example create object containing outputs of multiple PS cmdlets:
+
+# Example, collecting Get-PublicFolder and Get-MailPublicFolder:
+
+#Create object:
+
+$ipath = "\"
+$PFs = Get-PublicFolder $ipath -ResultSize unlimited -Recurse | ?{$_.MailEnabled -eq "True"}
+$PFs
+
+$PFInfo = $PFs | foreach {
+    New-Object psobject -Property @{
+        PFObject = $_
+        PF = $_ | Get-PublicFolder
+        MEPF = $_ | Get-MailPublicFolder 
+    }
+}
+
+# Export object: 
+$PFInfo | Export-Clixml $env:userprofile\desktop\PFInfoXML.xml -Depth 10
+
+# Load object:
+
+$PFInfoXML = import-clixml $env:userprofile\desktop\PFInfo.xml
+
+# Display subset option 1:
+Foreach ($item in $PFInfo) # or PFInfoXML
+{
+    Write-Host "Identity:" $item.PF.Identity
+    Write-Host "Forwarding:" $item.MEPF.DeliverToMailboxAndForward
+    Write-Host "PrimarySmtpAddress:" $item.MEPF.PrimarySmtpAddress
+    Write-Host "EmailAddresses:" $item.MEPF.EmailAddresses 
+    Write-Host
+}
+
+#Display subset option2:
+
+$PFInfoSubset = $PFInfoXML | foreach {
+    New-Object psobject -Property @{
+        Identity = $_.PF.Identity
+        PrimarySmtpAddress = $_.MEPF.PrimarySmtpAddress
+        Forwarding = $_.MEPF.DeliverToMailboxAndForward
+        EmailAddresses = $_.MEPF.EmailAddresses      
+    }
+}
+
+$PFInfoSubset | sort PrimarySmtpAddress | Out-GridView
+
+$PFInfo.GetType()
+$PFInfoXML.GetType()
+$PFInfoSubset.GetType()
+
+# endregion
 
 #region Remember
 <#
@@ -339,13 +467,9 @@ $a.ToUpper()
 @("10","20","30") -contains "20"
 
 
-get-help System.Collections.ArrayList
 
-# get more ingo on hashtables
-Get-Help about_Hash_Tables 
-get-help ConvertFrom-StringData
-ConvertFrom-StringData
-$p.keys | foreach {$p.$_.handles}
+
+
 
 # Optimizing PowerShell Scripts
 Start-Process "https://blogs.technet.microsoft.com/ashleymcglone/2017/07/12/slow-code-top-5-ways-to-make-your-powershell-scripts-run-faster/"
