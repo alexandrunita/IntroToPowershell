@@ -376,7 +376,7 @@ $p.keys | foreach {$p.$_.handles}
 
 
 
-# region example create object containing outputs of multiple PS cmdlets:
+# region create object containing outputs of multiple PS cmdlets (PSCustomObject):
 
 # Example, collecting Get-PublicFolder and Get-MailPublicFolder:
 
@@ -453,8 +453,11 @@ $PFInfoSubset.GetType()
 - !!! After an output was formatted you cannot export to CSV, XML !!! You can only out to host, file (txt), printer, string.
 #>
 
+# !!! Highly recommended self-study PS resource: https://docs.microsoft.com/en-us/powershell/scripting/how-to-use-docs?view=powershell-7.2
 
 #endregion
+
+
 
 
 
