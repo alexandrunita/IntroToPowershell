@@ -1,3 +1,29 @@
+
+#region Remember
+<#
+- Everything is an object
+- Check if Customer is having at least minimum required version of PowerShell (example: 3)
+- Start-Transcript
+- history
+- Run "$FormatEnumerationLimit = -1" before collecting formatted information
+- If you check all objects please user "-Resultsize Unlimited", or "-All" depends on the cmdlet used
+- Always filter on the left side of the pipeline and format only on the right side pipeline
+- Always run the cmdlet on your side before sending them to customers!!
+- We do not provide scripts, but if we do, it is as a best effort and they are to be considered as sample scripts for the customer insipire from, when creating their own. Such sample scripts must be accompaied by our disclaimer:
+
+    This is a sample script and sample scripts are not supported under any Microsoft standard support program or service. The sample scripts are provided AS IS without warranty of any kind. Microsoft further disclaims all implied warranties including, without limitation, any implied warranties of merchantability or of fitness for a particular purpose. The entire risk arising out of the use or performance of the sample scripts and documentation remains with you. In no event shall Microsoft, its authors, or anyone else involved in the creation, production, or delivery of the scripts be liable for any damages whatsoever (including, without limitation, damages for loss of business profits, business interruption, loss of business information, or other pecuniary loss) arising out of the use of or inability to use the sample scripts or documentation, even if Microsoft has been advised of the possibility of such damages.
+
+- Run the cmdlets first with -WhatIf
+- The most important cmdlets are:
+    Get-Help
+    Get-Command
+    Get-Member
+- When you have a complex situation, break it in small pieces that can be manageable and tested (user write-host to view the values first)
+- !!! After an output was formatted you cannot export to CSV, XML !!! You can only out to host, file (txt), printer, string.
+#>
+
+#endregion
+
 #region Loops
 
 # Conditional Logic - (if, elseif, else, switch)
@@ -279,6 +305,15 @@ Get-Mailbox user8 |fl *emaila*
 $a = "this is a sample text"
 $a.Split(" ")[0]
 
+"10-20" -Contains "-"
+"10-20".Contains("-")
+"10-20" |gm
+
+"10-20" -split "" -contains "-"
+
+@("10","20","30") -contains "20"
+
+
 $a | Get-Member
 $a.ToUpper()
 
@@ -359,6 +394,14 @@ $blockal = {
     
 (Measure-Command $blockal).TotalMilliseconds   
 
+# Optimizing PowerShell Scripts
+Start-Process "https://blogs.technet.microsoft.com/ashleymcglone/2017/07/12/slow-code-top-5-ways-to-make-your-powershell-scripts-run-faster/"
+Start-Process "https://blogs.technet.microsoft.com/heyscriptingguy/2014/05/18/weekend-scripter-powershell-speed-improvement-techniques/"
+Start-Process "https://social.technet.microsoft.com/wiki/contents/articles/11311.powershell-optimization-and-performance-testing.aspx"
+Start-Process "https://blogs.technet.microsoft.com/heyscriptingguy/2014/05/17/weekend-scripter-best-practices-for-powershell-scripting-in-shared-environment/"
+Start-Process "https://blogs.msdn.microsoft.com/powershell/2008/01/28/lightweight-performance-testing-with-powershell/"
+
+
 # get-help System.Collections.ArrayList
 
 # Hashtable example: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -368,12 +411,70 @@ $blockal = {
 # get more info on hashtables
 Get-Help about_Hash_Tables 
 get-help ConvertFrom-StringData
-ConvertFrom-StringData
-$p.keys | foreach {$p.$_.handles}
+
+$A = ConvertFrom-StringData -StringData "Top = Red `n Bottom = Blue"
+$A
+
+<#
+Name             Value
+----             -----
+Bottom           Blue
+Top              Red
+#>
+
+$ageList = @{
+    Kevin = 36
+    Alex  = 9
+}
+
+
+# add/remove method 1
+$key = 'Kevin'
+$value = 36
+$ageList.add( $key, $value )
+
+$ageList.add( 'Alex', 9 )
+$ageList.remove( 'Alex')
+$ageList
+
+# add method 2
+$ageList = @{}
+
+$key = 'Kevin'
+$value = 36
+$ageList[$key] = $value
+#add or override
+$ageList['Alex'] = 9
+
+$environments = @{
+    Prod = 'SrvProd05'
+    QA   = 'SrvQA02'
+    Dev  = 'SrvDev12'
+}
+
+$environments[@('QA','DEV')]
+$environments[('QA','DEV')]
+$environments['QA','DEV']
+
+$environments.values
+
+# loads all keys from beginning
+foreach($key in $ageList.keys)
+{
+    $message = '{0} is {1} years old' -f $key, $ageList[$key]
+    Write-Output $message
+}
+
+# loads keys one by one, feeing up previous hey from memory - lower on resources
+$ageList.GetEnumerator() | ForEach-Object{
+    $message = "$($_.key) is $($_.value) years old!"
+    Write-Output $message
+}
+
+## for more hashtable details, please visit: https://docs.microsoft.com/en-us/powershell/scripting/learn/deep-dives/everything-about-hashtable?view=powershell-7.2
 
 
 #endregion
-
 
 
 # region create object containing outputs of multiple PS cmdlets (PSCustomObject):
@@ -387,9 +488,10 @@ $PFs = Get-PublicFolder $ipath -ResultSize unlimited -Recurse | ?{$_.MailEnabled
 $PFs
 
 $PFInfo = $PFs | foreach {
+    [string]$temp = $_.MailRecipientGuid
     New-Object psobject -Property @{
         PFObject = $_
-        PF = $_ | Get-PublicFolder
+        REC = Get-Recipient $temp
         MEPF = $_ | Get-MailPublicFolder 
     }
 }
@@ -399,15 +501,16 @@ $PFInfo | Export-Clixml $env:userprofile\desktop\PFInfoXML.xml -Depth 10
 
 # Load object:
 
-$PFInfoXML = import-clixml $env:userprofile\desktop\PFInfo.xml
+$PFInfoXML = import-clixml $env:userprofile\desktop\PFInfoXML.xml
 
 # Display subset option 1:
 Foreach ($item in $PFInfo) # or PFInfoXML
 {
-    Write-Host "Identity:" $item.PF.Identity
+    Write-Host "Identity:" $item.PFObject.Identity
     Write-Host "Forwarding:" $item.MEPF.DeliverToMailboxAndForward
     Write-Host "PrimarySmtpAddress:" $item.MEPF.PrimarySmtpAddress
-    Write-Host "EmailAddresses:" $item.MEPF.EmailAddresses 
+    Write-Host "ContentMailbox:" $item.MEPF.ContentMailbox 
+    Write-Host "RecipientTypeDetails:" $item.REC.RecipientTypeDetails
     Write-Host
 }
 
@@ -415,10 +518,12 @@ Foreach ($item in $PFInfo) # or PFInfoXML
 
 $PFInfoSubset = $PFInfoXML | foreach {
     New-Object psobject -Property @{
-        Identity = $_.PF.Identity
+        Identity = $_.PFObject.Identity
         PrimarySmtpAddress = $_.MEPF.PrimarySmtpAddress
         Forwarding = $_.MEPF.DeliverToMailboxAndForward
-        EmailAddresses = $_.MEPF.EmailAddresses      
+        RecipientTypeDetails = $_.REC.RecipientTypeDetails
+        ContentMailbox = $_.MEPF.ContentMailbox 
+
     }
 }
 
@@ -430,56 +535,11 @@ $PFInfoSubset.GetType()
 
 # endregion
 
-#region Remember
-<#
-- Everything is an object
-- Check if Customer is having at least minimum required version of PowerShell (example: 3)
-- Start-Transcript
-- history
-- Run "$FormatEnumerationLimit = -1" before collecting formatted information
-- If you check all objects please user "-Resultsize Unlimited", or "-All" depends on the cmdlet used
-- Always filter on the left side of the pipeline and format only on the right side pipeline
-- Always run the cmdlet on your side before sending them to customers!!
-- We do not provide scripts, but if we do, it is as a best effort and they are to be considered as sample scripts for the customer insipire from, when creating their own. Such sample scripts must be accompaied by our disclaimer:
-
-    This is a sample script and sample scripts are not supported under any Microsoft standard support program or service. The sample scripts are provided AS IS without warranty of any kind. Microsoft further disclaims all implied warranties including, without limitation, any implied warranties of merchantability or of fitness for a particular purpose. The entire risk arising out of the use or performance of the sample scripts and documentation remains with you. In no event shall Microsoft, its authors, or anyone else involved in the creation, production, or delivery of the scripts be liable for any damages whatsoever (including, without limitation, damages for loss of business profits, business interruption, loss of business information, or other pecuniary loss) arising out of the use of or inability to use the sample scripts or documentation, even if Microsoft has been advised of the possibility of such damages.
-
-- Run the cmdlets first with -WhatIf
-- The most important cmdlets are:
-    Get-Help
-    Get-Command
-    Get-Member
-- When you have a complex situation, break it in small pieces that can be manageable  and tested
-- !!! After an output was formatted you cannot export to CSV, XML !!! You can only out to host, file (txt), printer, string.
-#>
 
 # !!! Highly recommended self-study PS resource: https://docs.microsoft.com/en-us/powershell/scripting/how-to-use-docs?view=powershell-7.2
 
-#endregion
 
 
-
-
-
-"10-20" -Contains "-"
-"10-20".Contains("-")
-"10-20" |gm
-
-"10-20" -split "" -contains "-"
-
-@("10","20","30") -contains "20"
-
-
-
-
-
-
-# Optimizing PowerShell Scripts
-Start-Process "https://blogs.technet.microsoft.com/ashleymcglone/2017/07/12/slow-code-top-5-ways-to-make-your-powershell-scripts-run-faster/"
-Start-Process "https://blogs.technet.microsoft.com/heyscriptingguy/2014/05/18/weekend-scripter-powershell-speed-improvement-techniques/"
-Start-Process "https://social.technet.microsoft.com/wiki/contents/articles/11311.powershell-optimization-and-performance-testing.aspx"
-Start-Process "https://blogs.technet.microsoft.com/heyscriptingguy/2014/05/17/weekend-scripter-best-practices-for-powershell-scripting-in-shared-environment/"
-Start-Process "https://blogs.msdn.microsoft.com/powershell/2008/01/28/lightweight-performance-testing-with-powershell/"
 
 
 # Foreach statment vs foreach alias (foreach-object)
@@ -572,7 +632,7 @@ Set-Location "C:\Users\vilega\OneDrive\Powershell"
 
 
 #region Pass the value to the console but also re-use it
-Get-mailbox admin2 |select * |Tee-Object -FilePath C:\mstemp1\GetMailbox.txt 
+Get-mailbox admin2 |select * | Tee-Object -FilePath C:\mstemp1\GetMailbox.txt 
 Invoke-Item C:\mstemp1\GetMailbox.txt
 
 #endregion
