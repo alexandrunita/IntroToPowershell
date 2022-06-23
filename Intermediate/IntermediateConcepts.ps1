@@ -22,7 +22,7 @@
 - !!! After an output was formatted you cannot export to CSV, XML !!! You can only out to host, file (txt), printer, string.
 #>
 
-#endregion
+#endregion Remember
 
 #region Loops
 
@@ -169,6 +169,11 @@ $mbxs | foreach {$_}
 get-mailbox | foreach {$_}
 $mbxs | ForEach-Object {$_.alias}
 
+# example for setting calendar folder permissions for user default to Reviwer on all mailboxes of type UserMailbox, using foreach (% is foreach PS alias):
+$calendars = Get-Mailbox -RecipientTypeDetails UserMailbox -ResultSize Unlimited | Get-MailboxFolderStatistics | ? {$_.FolderType -eq "Calendar"} | select @{n="Identity"; e={$_.Identity.Replace("\",":\")}}
+$calendars | % {if ((Get-MailboxFolderPermission -Identity $_.Identity -User Default).AccessRights -ne "Reviewer") {Set-MailboxFolderPermission -Identity $_.Identity -User Default -AccessRights Reviewer}} 
+
+
 For($i=0;$i -le 4;$i++) {
     write-host($i);
 }
@@ -188,7 +193,7 @@ $a.GetType().getproperties() | ?{$_.Name -match "length"}
 $a.get_Length()
 
 
-#endregion
+#endregion Loops
 
 #region Errors
 
@@ -319,8 +324,7 @@ $a.ToUpper()
 
 # to check all methods for string object, check .NET article: https://docs.microsoft.com/en-us/dotnet/api/system.string?view=net-6.0
 
-#endregion 
-
+#endregion Split
 
 #region Array/HashTable
 # @() - Array - data collection, indexable, immutable
@@ -477,7 +481,7 @@ $ageList.GetEnumerator() | ForEach-Object{
 #endregion
 
 
-# region create object containing outputs of multiple PS cmdlets (PSCustomObject):
+#region create object containing outputs of multiple PS cmdlets (PSCustomObject)
 
 # Example, collecting Get-PublicFolder and Get-MailPublicFolder:
 
@@ -533,19 +537,14 @@ $PFInfo.GetType()
 $PFInfoXML.GetType()
 $PFInfoSubset.GetType()
 
-# endregion
+#endregion
 
 
 # !!! Highly recommended self-study PS resource: https://docs.microsoft.com/en-us/powershell/scripting/how-to-use-docs?view=powershell-7.2
 
+#region various examples
 
-
-
-
-# Foreach statment vs foreach alias (foreach-object)
-Start-Process "https://poshoholic.com/2007/08/21/essential-powershell-understanding-foreach/"
-Start-Process "https://poshoholic.com/2007/08/31/essential-powershell-understanding-foreach-addendum/"
-
+# example for measuring script block
 $block1={
 get-mailbox |foreach {$_.alias}
 }
@@ -557,35 +556,28 @@ foreach ($mb in get-CASmailbox ){$_.alias}
 (Measure-Command $block1).TotalMilliseconds
 (Measure-Command $block2).TotalMilliseconds
 
-foreach ($character in [char[]]"aeioubcd") { if (@('a','e','i','o','u') -contains $character ) { continue } $character }
-[char[]]"aeioubcd" | foreach { if (@('a','e','i','o','u') -contains $_ ) { continue } $_ }
 
+# example to show characters that are not in a set of characters using foreach
+foreach ($character in [char[]]"aeioubcd") { if (@('a','e','i','o','u') -contains $character ) { continue } $character }
+
+
+# Recomendation when taking transcript files: Use the -IncludeInvocationHeader parameter to record also the cmdlets issued and timestamp in the transcript file:
 
 #Begin
 $path=[Environment]::GetFolderPath("Desktop")
 #$path = "c:\temp" 
 $timestamp = Get-Date -format yyMMdd_hhmmss
-Start-Transcript -Path "$Path\Transcript_$timestamp.txt" -Force
-
+Start-Transcript -IncludeInvocationHeader -Path "$Path\Transcript_$timestamp.txt" -Force
+# insert here your PS cmdlets
 Stop-transcript
 #End
 
-
+# Check if a string is null/empty
 $string1 = $null
 IF ([string]::IsNullOrWhitespace($string1)){'empty'} else {'not empty'}
 
 
-Get-OrganizationConfig |fl *block*
-help Set-OrganizationConfig -Parameter IPListBlocked
-
-
-$calendars = Get-Mailbox -RecipientTypeDetails UserMailbox -ResultSize Unlimited | Get-MailboxFolderStatistics | ? {$_.FolderType -eq "Calendar"} | select @{n="Identity"; e={$_.Identity.Replace("\",":\")}}
-$calendars | % {if ((Get-MailboxFolderPermission -Identity $_.Identity -User Default).AccessRights -ne "Reviewer") {Set-MailboxFolderPermission -Identity $_.Identity -User Default -AccessRights Reviewer}} 
-
-$calendars | % {Set-MailboxFolderPermission -Identity $_.Identity -User Default -AccessRights LimitedDetails} 
-
-
-
+# Example: it is recommended to declare variable type, otherwise PS will guess
 [string]$myvar2 = 1
 $myvar2.GetType()
 $myvar1 = 1
@@ -601,67 +593,45 @@ $arr.GetType()
 
 
 
+# example to continuously check the status of the issued request and exit with a message when request completed
 
 New-MoveRequest user8
 Get-MoveRequestStatistics user88 | fl status
-Do {
-        $stats = Get-MoveRequestStatistics -Identity "user88"
-        Write-Host '*' -NoNewline
-        Start-Sleep -Seconds 5
-    } While ($stats.Status -ne 'Completed')
-    Write-Host "`n> Move request completed"
+    Do {
+            $stats = Get-MoveRequestStatistics -Identity "user88"
+            Write-Host '*' -NoNewline
+            Start-Sleep -Seconds 5
+        } While ($stats.Status -ne 'Completed')
+        Write-Host "`n> Move request completed"
 
 
 
-# Powershell Providers
-# A Windows PowerShell provider is basically a sort of abstraction layer that hides the complexities of different types of information stores.
-Get-PSProvider
-Get-ChildItem Env:
-Get-Location
-Set-Location -Path "HKLM:"
-Set-Location -Path "Env:" -PassThru
-Set-Location "C:\Users\vilega\OneDrive\Powershell"
-
-
-# Discuss Like VS Match and Regex
-
-<# !!! For the second presenation:
-- need to review for, foreach, foreach-object
-- need to review try,catch,finally
-#>
-
-
-#region Pass the value to the console but also re-use it
+#Example Pass the value to the console but also re-use it
 Get-mailbox admin2 |select * | Tee-Object -FilePath C:\mstemp1\GetMailbox.txt 
 Invoke-Item C:\mstemp1\GetMailbox.txt
 
-#endregion
 
-#region Calculate Hash
-# Consider if to include? !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-# Computes the hash value for a file by using a specified hash algorithm.
-# Get-FileHash [-Path] <String[]> [-Algorithm <String> {SHA1 | SHA256 | SHA384 | SHA512 | MACTripleDES | MD5 | RIPEMD160} ] [ <CommonParameters>]
-
-Get-FileHash C:\Users\vilega\Desktop\test20mb.file -Algorithm SHA1 | Format-List
-
-#endregion
-
-
-#region Send-MailMessage
-# Consider if to include?
+# example Send-MailMessage
 # !!! you need to have port 25 opened !!!
 # [System.Net.ServicePointManager]::SecurityProtocol = 'Tls,TLS11,TLS12'
 
 $time = Get-Date -Format yyyyMMdd_hhmmss
 $creds = Get-Credential
 Send-MailMessage -SmtpServer smtp.office365.com -Port 587 -UseSsl -From admin@axul.onmicrosoft.com -To admin2@axul.onmicrosoft.com -Subject "Email_$time" -Body "This is only a test" -Credential $creds -Attachments "C:\mstemp1\fstat.txt"
-Send-MailMessage -SmtpServer vilega05.mail.protection.outlook.com -From admin@axul.onmicrosoft.com -To admin2@axul.onmicrosoft.com -Subject "Email_$time" -Body "This is only a test" -Credential -Attachments "C:\mstemp1\fstat.txt"
+Send-MailMessage -SmtpServer axul.mail.protection.outlook.com -From admin@axul.onmicrosoft.com -To admin2@axul.onmicrosoft.com -Subject "Email_$time" -Body "This is only a test" -Credential -Attachments "C:\mstemp1\fstat.txt"
+
+# example2, for sending multiple emails, for testing purposes, to populate new mailboxes in your test tenant for repro:
+
+[System.Net.ServicePointManager]::SecurityProtocol = 'Tls,TLS11,TLS12'
+$cred=Get-Credential
+for($i=1; $i -le 200; $i++) {
+for($j=1; $j -le 20; $j++) {
+Send-MailMessage -UseSSL -Port 587 -Credential $cred -From 'admin <admin@axul.ro>' -To 'stest1 <stest1@axul.ro>', 'stest2 <stest2@axul.ro>' -Subject "Batch$i Item$j - Sending the Attachment" -Body "Forgot to send the attachment. Sending now." -Attachments .\goodfood.jpg -Priority High -DeliveryNotificationOption OnSuccess, OnFailure -SmtpServer 'smtp.office365.com'
+}
+}
 
 
-#endregion
-
-
-#region MessageTrace 
+#example for getting MessageTrace details 
 Get-MessageTrace |select -Last 1 | Get-MessageTraceDetail |fl
 
 $msgID = (Get-MessageTrace |select -Last 1).MessageId
@@ -671,22 +641,17 @@ Get-MessageTrace -MessageId "56d6a6fc-e971-4d97-acc4-cf4f46e31d02@DB3FFO11FD054.
 Get-MessageTrace | Out-GridView -PassThru |Get-MessageTraceDetail 
 Get-MessageTrace | Out-GridView -PassThru |Get-MessageTraceDetail |fl
 
-#endregion
 
-#region Find MSOL Error
-#Users with errors
+#Example: Find MSOL user Error
+#Find all users with errors
 Get-MsolUser -MaxResults 10000 -HasErrorsOnly
 
-$UPN = "PFMBX1@vilega.onmicrosoft.com"
+$UPN = "user5@axul.onmicrosoft.com"
 (Get-MSOLUser -UserPrincipalName  $UPN).errors.errorDetail.objectErrors.errorRecord.errorDescription 
 
 
-#endregion
-
-
-#region XML - Handson manipulation of XML Reports
-$UPN = "PFMBX1@vilega.onmicrosoft.com"
-$UPN = "admin@vilega.onmicrosoft.com"
+#region XML - manipulation of XML Reports
+$UPN = "admin@axul.onmicrosoft.com"
 
 # First Example - Depth:
 $MSOLUserAll = Get-MsolUser -UserPrincipalName $UPN
@@ -694,14 +659,14 @@ $MSOLUserAll
 $MSOLUserAll.Licenses
 $MSOLUserAll.Licenses.ServiceStatus
 
-Get-MsolUser -UserPrincipalName $UPN | Export-Clixml .\Outputs\MSOLUser.xml -Force
-$MSOLUser = Import-Clixml .\Outputs\MSOLUser.xml
+Get-MsolUser -UserPrincipalName $UPN | Export-Clixml C:\MSTEMP1\MSOLUser.xml -Force
+$MSOLUser = Import-Clixml C:\MSTEMP1\MSOLUser.xml
 $MSOLUser
 $MSOLUser.Licenses
 $MSOLUser.Licenses.ServiceStatus
 
-Get-MsolUser -UserPrincipalName $UPN | Export-Clixml .\Outputs\MSOLUserD.xml -Depth 4 -Force
-$MSOLUserD = Import-Clixml .\Outputs\MSOLUserD.xml
+Get-MsolUser -UserPrincipalName $UPN | Export-Clixml C:\MSTEMP1\MSOLUserD.xml -Depth 4 -Force
+$MSOLUserD = Import-Clixml C:\MSTEMP1\MSOLUserD.xml
 $MSOLUserD
 $MSOLUserD.Licenses
 $MSOLUserD.Licenses.ServiceStatus
@@ -713,7 +678,7 @@ $MSOLUserD.Licenses.ServiceStatus
 $Mailbox = 'MigratedMailbox'
 Get-MoveRequest
 #Get-MoveRequestStatistics $Mailbox -IncludeReport -Diagnostic -DiagnosticArgument Verbose | Export-Clixml .\Outputs\MoveRequestStatistics.xml
-Get-MoveRequestStatistics $Mailbox -IncludeReport -DiagnosticInfo "showtimeslots, showtimeline, verbose" | Export-Clixml C:\Temp\MSSupport\MoveRequestStatistics_$Mailbox.xml 
+Get-MoveRequestStatistics $Mailbox -IncludeReport -DiagnosticInfo "showtimeslots, showtimeline, verbose" | Export-Clixml C:\Temp\MSSupport\MoveRequestStatistics_$Mailbox.xml 
 
 # Analyze on the engineer side
 $r = Import-Clixml .\Outputs\MoveRequestStatistics.xml
@@ -763,67 +728,61 @@ $r2.Report.TargetMailboxSize
 #endregion
 
 
-# ==-=-==-=-=-=-=-=-=-=
-
-trow
-trow Exception("My exception")
-trow RuntimeException
-
-function TrapTest {
-    trap {"Error found: $_"}
-    thiswontwork
-}
-
-
-trap{ write-host $_; }
-throw "blah"
-write-host after
-
-###
-
-# from external, you'll get the code
-$LASTEXITCODE
-
-###
-
 #region Function
 Function Test
 {
 [CmdletBinding(SupportsShouldProcess)] # if error inside function, it will be visible outside the function
 Param(
 [Parameter(Mandatory=$True, HelpMessage = "Input your name", Position=0)]
-[Alias("Numelemeu")]
+[Alias("MyName")]
 [string] $name
 )
-
 $res = $PSCmdlet.ShouldContinue($name,"Title");
 return $res
 }
+
 $newRes = Test -name "Victoras"
-$newRes = Test -Numelemeu "Victoras"
+$newRes = Test -MyName "Victoras"
 
 #endregion 
 
-# region - TO REIEW
+
+#endregion various examples
 
 
-$AllMbx = get-mailbox 
-
-$AllMbx.GetType()
-$mbx= get-mailbox test4
-$AllMbx.Contains('test4')
-([System.Collections.ArrayList]$AllMbx).Contains($mbx)
-$AllMbx.Contains($mbx)
-
-$mbx=$AllMbx[0]
-$AllMbx.Contains($mbx)
-Start-Process "http://www.computerperformance.co.uk/powershell/powershell_conditional_operators.htm"
-
-
-# endregion
 
 # region log processing
 
 get-string # to parse the log (error) 
 
 # endregion log processing
+
+
+Get-OrganizationConfig |fl *block*
+help Set-OrganizationConfig -Parameter IPListBlocked
+
+#region Calculate Hash
+# Consider if to include? !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Computes the hash value for a file by using a specified hash algorithm.
+# Get-FileHash [-Path] <String[]> [-Algorithm <String> {SHA1 | SHA256 | SHA384 | SHA512 | MACTripleDES | MD5 | RIPEMD160} ] [ <CommonParameters>]
+
+Get-FileHash C:\mstemp1\fstat.txt -Algorithm SHA1 | Format-List
+
+# region - TO REIEW
+
+
+$AllMbx = get-mailbox -ResultSize unlimited
+
+$AllMbx.GetType()
+$mbx= get-mailbox user9
+$mbx.GetType()
+$AllMbx.Contains('user9')
+([System.Collections.ArrayList]$AllMbx).Contains($mbx)
+$AllMbx.Contains($mbx)
+
+$mbx=$AllMbx[0]
+$mbx.GetType()
+$AllMbx.Contains($mbx)
+
+
+# endregion
