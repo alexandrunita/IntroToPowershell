@@ -169,10 +169,6 @@ $mbxs | foreach {$_}
 get-mailbox | foreach {$_}
 $mbxs | ForEach-Object {$_.alias}
 
-# example for setting calendar folder permissions for user default to Reviwer on all mailboxes of type UserMailbox, using foreach (% is foreach PS alias):
-$calendars = Get-Mailbox -RecipientTypeDetails UserMailbox -ResultSize Unlimited | Get-MailboxFolderStatistics | ? {$_.FolderType -eq "Calendar"} | select @{n="Identity"; e={$_.Identity.Replace("\",":\")}}
-$calendars | % {if ((Get-MailboxFolderPermission -Identity $_.Identity -User Default).AccessRights -ne "Reviewer") {Set-MailboxFolderPermission -Identity $_.Identity -User Default -AccessRights Reviewer}} 
-
 
 For($i=0;$i -le 4;$i++) {
     write-host($i);
@@ -297,7 +293,7 @@ Get-Mailbox user8 |fl *emaila*
 
 # To add / remove v2
 Get-Mailbox user8 |fl *emaila*
-Set-Mailbox user8 -EmailAddresses @{add="smtp:user8abc@axul.onmicrosoft.com"} # @ creates on-the-spot an object of type hashtable (key-value pair), and EXO recognizes and instead of overrite will the specified methor (add)
+Set-Mailbox user8 -EmailAddresses @{add="smtp:user8abc@axul.onmicrosoft.com"} # @ creates on-the-spot an object of type hashtable (key-value pair), and EXO recognizes and instead of overrite will use the specified method (add)
 Get-Mailbox user8 |fl *emaila*
 Set-Mailbox user8 -EmailAddresses @{remove="smtp:user8abc@axul.onmicrosoft.com"}
 Get-Mailbox user8 |fl *emaila*
@@ -305,7 +301,7 @@ Get-Mailbox user8 |fl *emaila*
 #endregion
 
 #region Split
-# dotnet embedded function to split string
+# dotnet embedded function to split, replace, contains string
 
 $a = "this is a sample text"
 $a.Split(" ")[0]
@@ -321,6 +317,10 @@ $a.Split(" ")[0]
 
 $a | Get-Member
 $a.ToUpper()
+
+# example for setting calendar folder permissions for user 'default' to Reviwer on all mailboxes of type UserMailbox, using foreach (% is foreach PS alias):
+$calendars = Get-Mailbox -RecipientTypeDetails UserMailbox -ResultSize Unlimited | Get-MailboxFolderStatistics | ? {$_.FolderType -eq "Calendar"} | select @{n="Identity"; e={$_.Identity.Replace("\",":\")}}
+$calendars | % {if ((Get-MailboxFolderPermission -Identity $_.Identity -User Default).AccessRights -ne "Reviewer") {Set-MailboxFolderPermission -Identity $_.Identity -User Default -AccessRights Reviewer}} 
 
 # to check all methods for string object, check .NET article: https://docs.microsoft.com/en-us/dotnet/api/system.string?view=net-6.0
 
@@ -408,7 +408,7 @@ Start-Process "https://blogs.msdn.microsoft.com/powershell/2008/01/28/lightweigh
 
 # get-help System.Collections.ArrayList
 
-# Hashtable example: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Hashtable
 # @{} - HashTable - key value collection (index - unsorted key value pair)
 # $hashtable = @{name="Liviu";age="32"}
 
@@ -416,15 +416,6 @@ Start-Process "https://blogs.msdn.microsoft.com/powershell/2008/01/28/lightweigh
 Get-Help about_Hash_Tables 
 get-help ConvertFrom-StringData
 
-$A = ConvertFrom-StringData -StringData "Top = Red `n Bottom = Blue"
-$A
-
-<#
-Name             Value
-----             -----
-Bottom           Blue
-Top              Red
-#>
 
 $ageList = @{
     Kevin = 36
@@ -450,6 +441,7 @@ $ageList[$key] = $value
 #add or override
 $ageList['Alex'] = 9
 
+#another example
 $environments = @{
     Prod = 'SrvProd05'
     QA   = 'SrvQA02'
@@ -474,6 +466,17 @@ $ageList.GetEnumerator() | ForEach-Object{
     $message = "$($_.key) is $($_.value) years old!"
     Write-Output $message
 }
+
+#Creating a hashtable from string
+$A = ConvertFrom-StringData -StringData "Top = Red `n Bottom = Blue"
+$A
+
+<#
+Name             Value
+----             -----
+Bottom           Blue
+Top              Red
+#>
 
 ## for more hashtable details, please visit: https://docs.microsoft.com/en-us/powershell/scripting/learn/deep-dives/everything-about-hashtable?view=powershell-7.2
 
@@ -549,10 +552,9 @@ $PFInfoSubset.GetType()
 - Don't over complicate things. Keep it simple and use the most straight forward way to accomplish a task. 
 - Avoid aliases and positional parameters in any code that you reuse. Format your code for readability. 
 - Don't hardcode values; use parameters and variables. Don't write unnecessary code even if it doesn't hurt anything. It adds unnecessary complexity. 
-- Attention to detail goes a long way when writing any PowerShell code.
 - Always test/visualize first. Use -WhatIf parameter, or use Write-Host to visualize current variable value instead of setting anything with them. When dealing with lists of objects (like users), you can export to csv and visually inspect the list to confirm first.
 - For higher complexity issues, where is necessary to colect multiple PS outputs, use PS custom object and export to XML with higher depth (but not higher than needed as it will increase the XML size), then import XML on your side to filter, arrange and so on for analysis troubleshooting.
-- Whenever you run PS on customer tenant, even if the cmdlets are only to export some logs in csv or xml file, do it after you start transcript with -IncludeInvocationHeader parameter to record also the cmdlets issued and timestamp in the transcript file. Example:
+- Whenever you run PS on customer tenant, even if the cmdlets are only meant to export some logs in csv or xml file, do it after you start transcript with -IncludeInvocationHeader parameter to record also the cmdlets issued and timestamp in the transcript file. Example:
 
     #Begin
     $path=[Environment]::GetFolderPath("Desktop")
@@ -612,17 +614,6 @@ foreach ($mb in get-CASmailbox ){$_.alias}
 (Measure-Command $block1).TotalMilliseconds
 (Measure-Command $block2).TotalMilliseconds
 
-
-# Recomendation when taking transcript files: Use the -IncludeInvocationHeader parameter to record also the cmdlets issued and timestamp in the transcript file:
-
-#Begin
-$path=[Environment]::GetFolderPath("Desktop")
-#$path = "c:\temp" 
-$timestamp = Get-Date -format yyMMdd_hhmmss
-Start-Transcript -IncludeInvocationHeader -Path "$Path\Transcript_$timestamp.txt" -Force
-# insert here your PS cmdlets
-Stop-transcript
-#End
 
 # Check if a string is null/empty
 $string1 = $null
