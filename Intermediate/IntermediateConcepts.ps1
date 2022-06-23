@@ -542,6 +542,62 @@ $PFInfoSubset.GetType()
 
 # !!! Highly recommended self-study PS resource: https://docs.microsoft.com/en-us/powershell/scripting/how-to-use-docs?view=powershell-7.2
 
+
+#region Remember
+
+<#
+- Don't over complicate things. Keep it simple and use the most straight forward way to accomplish a task. 
+- Avoid aliases and positional parameters in any code that you reuse. Format your code for readability. 
+- Don't hardcode values; use parameters and variables. Don't write unnecessary code even if it doesn't hurt anything. It adds unnecessary complexity. 
+- Attention to detail goes a long way when writing any PowerShell code.
+- Always test/visualize first. Use -WhatIf parameter, or use Write-Host to visualize current variable value instead of setting anything with them. When dealing with lists of objects (like users), you can export to csv and visually inspect the list to confirm first.
+- For higher complexity issues, where is necessary to colect multiple PS outputs, use PS custom object and export to XML with higher depth (but not higher than needed as it will increase the XML size), then import XML on your side to filter, arrange and so on for analysis troubleshooting.
+- Whenever you run PS on customer tenant, even if the cmdlets are only to export some logs in csv or xml file, do it after you start transcript with -IncludeInvocationHeader parameter to record also the cmdlets issued and timestamp in the transcript file. Example:
+
+    #Begin
+    $path=[Environment]::GetFolderPath("Desktop")
+    #$path = "c:\temp" 
+    $timestamp = Get-Date -format yyMMdd_hhmmss
+    Start-Transcript -IncludeInvocationHeader -Path "$Path\Transcript_$timestamp.txt" -Force
+    # insert here your PS cmdlets
+    Stop-transcript
+    #End
+
+#>
+
+#endregion Remember
+
+#region functions
+
+# When you have to do the same operation multiple times in a script, using functions is more efficient and clean
+# For naming your functions, it is recommended to use approved verbs and to prefix the noun
+#    Get-Verb | Sort-Object -Property Verb
+
+# Example of function which returns all cmdlets having specific parameter names:
+
+    function Get-MrParameterCount {
+        param (
+            [string[]]$ParameterName
+        )
+
+        foreach ($Parameter in $ParameterName) {
+            $Results = Get-Command -ParameterName $Parameter -ErrorAction SilentlyContinue
+
+            [pscustomobject]@{
+                ParameterName = $Parameter
+                NumberOfCmdlets = $Results.Count
+            }
+        }
+    }
+
+Get-MrParameterCount -ParameterName emailaddresses, alias, userprincipalname
+Get-Command -ParameterName emailaddresses
+
+# for more on functions in PS, please check: https://docs.microsoft.com/en-us/powershell/scripting/learn/ps101/09-functions?view=powershell-7.2
+
+#endregion functions
+
+
 #region various examples
 
 # example for measuring script block
@@ -555,10 +611,6 @@ foreach ($mb in get-CASmailbox ){$_.alias}
 
 (Measure-Command $block1).TotalMilliseconds
 (Measure-Command $block2).TotalMilliseconds
-
-
-# example to show characters that are not in a set of characters using foreach
-foreach ($character in [char[]]"aeioubcd") { if (@('a','e','i','o','u') -contains $character ) { continue } $character }
 
 
 # Recomendation when taking transcript files: Use the -IncludeInvocationHeader parameter to record also the cmdlets issued and timestamp in the transcript file:
@@ -637,10 +689,12 @@ Get-MessageTrace |select -Last 1 | Get-MessageTraceDetail |fl
 $msgID = (Get-MessageTrace |select -Last 1).MessageId
 Get-MessageTrace -MessageId $msgID  | Get-MessageTraceDetail |fl
 
-Get-MessageTrace -MessageId "56d6a6fc-e971-4d97-acc4-cf4f46e31d02@DB3FFO11FD054.protection.gbl"  | Get-MessageTraceDetail |fl
+Get-MessageTrace -MessageId "input here the message id value"  | Get-MessageTraceDetail |fl
 Get-MessageTrace | Out-GridView -PassThru |Get-MessageTraceDetail 
 Get-MessageTrace | Out-GridView -PassThru |Get-MessageTraceDetail |fl
 
+
+#region XML - manipulation of XML Reports
 
 #Example: Find MSOL user Error
 #Find all users with errors
@@ -649,8 +703,7 @@ Get-MsolUser -MaxResults 10000 -HasErrorsOnly
 $UPN = "user5@axul.onmicrosoft.com"
 (Get-MSOLUser -UserPrincipalName  $UPN).errors.errorDetail.objectErrors.errorRecord.errorDescription 
 
-
-#region XML - manipulation of XML Reports
+# check licensing status
 $UPN = "admin@axul.onmicrosoft.com"
 
 # First Example - Depth:
@@ -677,12 +730,12 @@ $MSOLUserD.Licenses.ServiceStatus
 # Collect from customer
 $Mailbox = 'MigratedMailbox'
 Get-MoveRequest
-#Get-MoveRequestStatistics $Mailbox -IncludeReport -Diagnostic -DiagnosticArgument Verbose | Export-Clixml .\Outputs\MoveRequestStatistics.xml
-Get-MoveRequestStatistics $Mailbox -IncludeReport -DiagnosticInfo "showtimeslots, showtimeline, verbose" | Export-Clixml C:\Temp\MSSupport\MoveRequestStatistics_$Mailbox.xml 
+#Get-MoveRequestStatistics $Mailbox -IncludeReport -Diagnostic -DiagnosticArgument Verbose | Export-Clixml C:\MSTEMP1\MoveRequestStatistics.xml
+Get-MoveRequestStatistics $Mailbox -IncludeReport -DiagnosticInfo "showtimeslots, showtimeline, verbose" | Export-Clixml C:\MSTEMP1\MoveRequestStatistics_$Mailbox.xml 
 
 # Analyze on the engineer side
-$r = Import-Clixml .\Outputs\MoveRequestStatistics.xml
-$r | fl | Out-File .\Outputs\MoveRequestStatistics.txt -Force; Invoke-Item .\Outputs\MoveRequestStatistics.txt
+$r = Import-Clixml C:\MSTEMP1\MoveRequestStatistics.xml
+$r | fl | Out-File C:\MSTEMP1\MoveRequestStatistics.txt -Force; Invoke-Item C:\MSTEMP1\MoveRequestStatistics.txt
 
 $r |fl 
 
@@ -711,9 +764,9 @@ $r.Report.Entries.Failure
 
 # Mailbox Import
 Get-MailboxImportRequest -Mailbox admin |fl
-Get-MailboxImportRequestStatistics -Identity (Get-MailboxImportRequest -Mailbox admin).RequestGuid -IncludeReport -DiagnosticInfo "showtimeslots, showtimeline, verbose" | Export-Clixml .\Outputs\ImportRequestStats.xml
+Get-MailboxImportRequestStatistics -Identity (Get-MailboxImportRequest -Mailbox admin).RequestGuid -IncludeReport -DiagnosticInfo "showtimeslots, showtimeline, verbose" | Export-Clixml C:\MSTEMP1\ImportRequestStats.xml
 
-$r2 = Import-Clixml .\Outputs\ImportRequestStats.xml
+$r2 = Import-Clixml C:\MSTEMP1\ImportRequestStats.xml
 $r2 |fl
 $r2 | select * -ExcludeProperty Report,DiagnosticInfo
 $r2.Report.Failures 
@@ -725,10 +778,10 @@ $r2.Report.SessionStatistics
 $r2.Report.TargetMailboxSize
 
 
-#endregion
+#endregion XML - manipulation of XML Reports
 
 
-#region Function
+#region advanced Function
 Function Test
 {
 [CmdletBinding(SupportsShouldProcess)] # if error inside function, it will be visible outside the function
@@ -744,12 +797,17 @@ return $res
 $newRes = Test -name "Victoras"
 $newRes = Test -MyName "Victoras"
 
-#endregion 
+#endregion advanced Function
+
+# example to show characters that are not in a set of characters using foreach
+foreach ($character in [char[]]"aeioubcd") { if (@('a','e','i','o','u') -contains $character ) { continue } $character }
 
 
 #endregion various examples
 
 
+
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 # region log processing
 
