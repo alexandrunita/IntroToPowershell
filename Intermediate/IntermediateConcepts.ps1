@@ -807,40 +807,4 @@ foreach ($character in [char[]]"aeioubcd") { if (@('a','e','i','o','u') -contain
 
 
 
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-# region log processing
-
-get-string # to parse the log (error) 
-
-# endregion log processing
-
-
-Get-OrganizationConfig |fl *block*
-help Set-OrganizationConfig -Parameter IPListBlocked
-
-#region Calculate Hash
-# Consider if to include? !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-# Computes the hash value for a file by using a specified hash algorithm.
-# Get-FileHash [-Path] <String[]> [-Algorithm <String> {SHA1 | SHA256 | SHA384 | SHA512 | MACTripleDES | MD5 | RIPEMD160} ] [ <CommonParameters>]
-
-Get-FileHash C:\mstemp1\fstat.txt -Algorithm SHA1 | Format-List
-
-# region - TO REIEW
-
-
-$AllMbx = get-mailbox -ResultSize unlimited
-
-$AllMbx.GetType()
-$mbx= get-mailbox user9
-$mbx.GetType()
-$AllMbx.Contains('user9')
-([System.Collections.ArrayList]$AllMbx).Contains($mbx)
-$AllMbx.Contains($mbx)
-
-$mbx=$AllMbx[0]
-$mbx.GetType()
-$AllMbx.Contains($mbx)
-
-
-# endregion
